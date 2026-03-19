@@ -23,12 +23,15 @@ jobs:
       - name: Run Django check
         env:
           DJANGO_SETTINGS_MODULE: college_review_backend.settings
-          DJANGO_SECRET_KEY: 'temporary-secret-key-for-ci'
+          SECRET_KEY: 'temporary-secret-key-for-ci'
           DB_NAME: 'college_lens'
           DB_USER: 'root'
           DB_PASSWORD: ''
           DB_HOST: 'localhost'
           DB_PORT: '3306'
+          CORS_ALLOWED_ORIGINS: 'http://localhost:3000'
+          ALLOWED_HOSTS: 'localhost,127.0.0.1'
+          DEBUG: 'True'
         run: cd backend && python manage.py check
 
   test-frontend:
