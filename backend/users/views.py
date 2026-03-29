@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, CounsellingRequestSerializer
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -32,3 +32,6 @@ class LoginView(views.APIView):
             return Response(data)
         return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
+class CounsellingRequestCreateView(generics.CreateAPIView):
+    serializer_class = CounsellingRequestSerializer
+    permission_classes = [AllowAny]

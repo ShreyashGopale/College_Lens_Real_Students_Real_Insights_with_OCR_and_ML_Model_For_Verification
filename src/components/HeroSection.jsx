@@ -2,7 +2,7 @@ import { Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-export function HeroSection() {
+export function HeroSection({ onGetCounselling }) {
     return (
         <section
             className="relative min-h-[500px] flex items-center justify-center bg-cover bg-center"
@@ -28,7 +28,10 @@ export function HeroSection() {
 
                     {/* Get Counselling Button */}
                     <div className="flex justify-center">
-                        <Button className="bg-yellow-400 text-black hover:bg-yellow-500 px-8 py-6 text-lg">
+                        <Button 
+                            className="bg-yellow-400 text-black hover:bg-yellow-500 px-8 py-6 text-lg"
+                            onClick={onGetCounselling}
+                        >
                             Get Counselling
                         </Button>
                     </div>

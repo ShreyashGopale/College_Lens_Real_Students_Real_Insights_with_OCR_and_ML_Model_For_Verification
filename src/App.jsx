@@ -4,6 +4,7 @@ import { HeroSection } from "./components/HeroSection";
 import { BrowseSection } from "./components/BrowseSection";
 import { TopColleges } from "./components/TopColleges";
 import { CollegeDetail } from "./components/CollegeDetail";
+import { CounsellingForm } from "./components/CounsellingForm";
 
 import { CollegeDashboard } from "./components/CollegeDashboard";
 import { collegesData } from "./components/collegeData";
@@ -11,6 +12,7 @@ import { collegesData } from "./components/collegeData";
 
 export default function App() {
     const [selectedCollegeId, setSelectedCollegeId] = useState(null);
+    const [showCounsellingForm, setShowCounsellingForm] = useState(false);
     const [user, setUser] = useState(null); // Global user state: { username, role, college_id, ... }
 
     useEffect(() => {
@@ -28,6 +30,17 @@ export default function App() {
 
     const handleBackToHome = () => {
         setSelectedCollegeId(null);
+        setShowCounsellingForm(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleGetCounselling = () => {
+        setShowCounsellingForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleBackFromCounselling = () => {
+        setShowCounsellingForm(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -40,6 +53,7 @@ export default function App() {
         localStorage.removeItem('user');
         setUser(null);
         setSelectedCollegeId(null);
+        setShowCounsellingForm(false);
     };
 
     // Routing Logic
@@ -55,11 +69,13 @@ export default function App() {
                 onLogin={handleLogin}
                 onLogout={handleLogout}
             />
-            {selectedCollegeId ? (
+            {showCounsellingForm ? (
+                <CounsellingForm onBack={handleBackFromCounselling} />
+            ) : selectedCollegeId ? (
                 <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} />
             ) : (
                 <>
-                    <HeroSection />
+                    <HeroSection onGetCounselling={handleGetCounselling} />
                     <BrowseSection />
                     <TopColleges onCollegeClick={handleCollegeClick} />
                 </>

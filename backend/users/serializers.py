@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import StudentProfile, CollegeAdminProfile
+from .models import StudentProfile, CollegeAdminProfile, CounsellingRequest
 from colleges.models import College
 
 User = get_user_model()
@@ -72,3 +72,8 @@ class RegisterSerializer(serializers.ModelSerializer):
                 CollegeAdminProfile.objects.create(user=user, college=college)
         
         return user
+
+class CounsellingRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CounsellingRequest
+        fields = '__all__'
