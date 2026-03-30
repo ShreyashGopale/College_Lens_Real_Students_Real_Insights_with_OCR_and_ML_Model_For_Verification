@@ -106,7 +106,13 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                 }),
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                throw new Error("Server error. Backend or Database connection issue.");
+            }
 
             if (response.ok) {
                 // setLoggedInUser(data.username); // Logic handled by parent via Login
@@ -132,7 +138,8 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                 setError(JSON.stringify(data));
             }
         } catch (err) {
-            setError("Network error. Please try again.");
+            console.error("Sign up failed:", err);
+            setError(err.message === "Failed to fetch" ? "Network error. Is backend running?" : (err.message || "Network error. Please try again."));
         } finally {
             setLoading(false);
         }
@@ -213,39 +220,27 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                             >
                                 Create an Account
                             </Button>
-                            <div className="relative">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setIsLoginDropdownOpen(!isLoginDropdownOpen)}
-                                >
-                                    <User className="w-5 h-5" />
-                                </Button>
-
-                                {/* Login Dropdown */}
-                                {isLoginDropdownOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
-                                        <button
-                                            className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b"
-                                            onClick={() => {
-                                                setIsLoginDropdownOpen(false);
-                                                setIsLoginDialogOpen(true);
-                                            }}
-                                        >
-                                            College Login
-                                        </button>
-                                        <button
-                                            className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors"
-                                            onClick={() => {
-                                                setIsLoginDropdownOpen(false);
-                                                setIsLoginDialogOpen(true);
-                                            }}
-                                        >
-                                            Student Login
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <User className="w-5 h-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem 
+                                        className="cursor-pointer py-3 border-b"
+                                        onClick={() => setIsLoginDialogOpen(true)}
+                                    >
+                                        College Login
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                        className="cursor-pointer py-3"
+                                        onClick={() => setIsLoginDialogOpen(true)}
+                                    >
+                                        Student Login
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </>
                     )}
                 </div>

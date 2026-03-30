@@ -11,14 +11,16 @@ import {
   CarouselPrevious,
 } from "./ui/carousel";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { collegeService, galleryService } from "../services/api";
+import { collegeService, galleryService, reviewService } from "../services/api";
+import { StudentRegisterModal } from "./StudentRegisterModal";
+import { LoginDialog } from "./auth/LoginDialog";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 
-export function CollegeDetail({ collegeId, onBack }) {
+export function CollegeDetail({ collegeId, onBack, user, onLogin }) {
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("info");
@@ -26,6 +28,8 @@ export function CollegeDetail({ collegeId, onBack }) {
   const [isWriteReviewOpen, setIsWriteReviewOpen] = useState(false);
   const [galleryData, setGalleryData] = useState([]);
   const [galleryFilter, setGalleryFilter] = useState('all');
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchCollegeDetail = async () => {
@@ -101,17 +105,10 @@ export function CollegeDetail({ collegeId, onBack }) {
   const [reviewCourse, setReviewCourse] = useState("");
   const [isAnonymousReview, setIsAnonymousReview] = useState(false);
 
-  // Mock: Check if user is logged in and registered for THIS specific college
-  // In a real app, this would come from authentication context
-  const isLoggedIn = false; // Set to false by default - user must log in
-  const currentUserName = "John Doe"; // For demo purposes
-
-  // List of college IDs that the current user is registered for
-  // In a real app, this would come from the backend/database
-  const userRegisteredColleges = [1, 2]; // User is registered for colleges with ID 1 and 2
-
-  // Check if user is registered for THIS specific college
-  const isRegisteredForThisCollege = isLoggedIn && userRegisteredColleges.includes(college.id);
+  // Check if user is logged in and registered for THIS specific college
+  const isLoggedIn = !!user;
+  const currentUserName = user?.username || "Student";
+  const isRegisteredForThisCollege = isLoggedIn && String(user?.college_id) === String(college?.id);
 
   // Mock comments data for reviews
   const mockComments = {
@@ -254,23 +251,52 @@ export function CollegeDetail({ collegeId, onBack }) {
                     </div>
                   </div>
 
-                  {/* Right Section - Rating */}
-                  <div className="flex flex-col items-center gap-2 bg-blue-50 p-4 rounded-lg">
-                    <div className="text-4xl text-blue-600">
-                      {college.rating}/5
+                  {/* Right Section - Rating & Action */}
+                  <div className="flex flex-col items-end gap-3">
+                    {/* Rating */}
+                    <div className="flex flex-col items-center gap-2 bg-blue-50 p-4 rounded-lg w-full">
+                      <div className="text-4xl text-blue-600">
+                        {college.rating}/5
+                      </div>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < Math.floor(college.rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "fill-gray-300 text-gray-300"
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-gray-600">Based on reviews</span>
                     </div>
-                    <div className="flex gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${i < Math.floor(college.rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "fill-gray-300 text-gray-300"
-                            }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs text-gray-600">Based on reviews</span>
+
+                    {/* Action Button */}
+                    {isRegisteredForThisCollege ? (
+                      <Button
+                        onClick={() => {
+                          setActiveTab("reviews");
+                          setIsWriteReviewOpen(true);
+                        }}
+                        className="bg-yellow-400 text-black hover:bg-yellow-500 gap-2 w-full"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Write Review
+                      </Button>
+                    ) : !isLoggedIn ? (
+                      <div className="w-full flex flex-col gap-2">
+                        <Button 
+                          onClick={() => setShowRegisterModal(true)}
+                          className="bg-blue-600 text-white hover:bg-blue-700 w-full"
+                        >
+                          Create Student Account
+                        </Button>
+                        <p className="text-xs text-center text-gray-500">
+                          Already a student here? <button onClick={() => setIsLoginDialogOpen(true)} className="text-blue-600 hover:underline">Login</button>
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </CardContent>
@@ -670,7 +696,7 @@ export function CollegeDetail({ collegeId, onBack }) {
                   </div>
 
                   {/* Write Review Button - Only for registered students */}
-                  {isLoggedIn && isRegisteredForThisCollege && (
+                  {isRegisteredForThisCollege ? (
                     <div className="mb-8 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
@@ -688,7 +714,29 @@ export function CollegeDetail({ collegeId, onBack }) {
                         </Button>
                       </div>
                     </div>
-                  )}
+                  ) : !isLoggedIn ? (
+                    <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-gray-900 mb-1">Verify Your Student Status</h4>
+                          <p className="text-sm text-gray-600">
+                            Create a student account for {college.name} to write reviews and unlock features.
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            onClick={() => setShowRegisterModal(true)}
+                            className="bg-blue-600 text-white hover:bg-blue-700 gap-2"
+                          >
+                            Create Student Account
+                          </Button>
+                          <p className="text-xs text-gray-500">
+                            Already registered? <button onClick={() => setIsLoginDialogOpen(true)} className="text-blue-600 hover:underline">Login here</button>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {college.reviews && college.reviews.length > 0 ? (
                     <div className="space-y-6">
@@ -707,9 +755,9 @@ export function CollegeDetail({ collegeId, onBack }) {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-3 mb-1">
                                     <h4 className="text-gray-900">
-                                      {review.isAnonymous ? "Anonymous Student" : review.studentName}
+                                      {(review.isAnonymous || review.is_anonymous) ? "Anonymous Student" : (review.studentName || review.user?.username)}
                                     </h4>
-                                    {!review.isAnonymous && (
+                                    {!(review.isAnonymous || review.is_anonymous) && (
                                       <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                                         Verified Student
                                       </Badge>
@@ -935,7 +983,7 @@ export function CollegeDetail({ collegeId, onBack }) {
 
       {/* Write Review Dialog */}
       <Dialog open={isWriteReviewOpen} onOpenChange={setIsWriteReviewOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Write a Review for {college.name}</DialogTitle>
             <DialogDescription>
@@ -1035,25 +1083,43 @@ export function CollegeDetail({ collegeId, onBack }) {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   if (reviewRating > 0 && reviewText.length >= 50) {
-                    // In a real app, this would submit to the backend
-                    console.log({
-                      rating: reviewRating,
-                      course: reviewCourse,
-                      reviewText,
-                      isAnonymous: isAnonymousReview,
-                      studentName: isAnonymousReview ? null : currentUserName,
-                      collegeId: college.id,
-                      date: new Date().toLocaleDateString()
-                    });
-                    // Show success message and close dialog
-                    alert("Thank you! Your review has been submitted successfully.");
-                    setIsWriteReviewOpen(false);
-                    setReviewRating(0);
-                    setReviewText("");
-                    setReviewCourse("");
-                    setIsAnonymousReview(false);
+                    try {
+                      await reviewService.create({
+                        college: college.id,
+                        rating: reviewRating,
+                        text: reviewText,
+                        is_anonymous: isAnonymousReview
+                      });
+                      
+                      // Refresh reviews by refetching college details
+                      const updatedData = await collegeService.getDetail(college.id);
+                      setCollege(prev => ({
+                        ...prev,
+                        reviews: updatedData.reviews ? updatedData.reviews.map(r => ({
+                          id: r.id,
+                          studentName: r.user.username,
+                          isAnonymous: r.is_anonymous || false,
+                          rating: r.rating,
+                          date: new Date(r.created_at).toLocaleDateString(),
+                          reviewText: r.text,
+                          likes: 0,
+                          dislikes: 0,
+                          comments: r.comments ? r.comments.length : 0
+                        })) : []
+                      }));
+
+                      alert("Thank you! Your review has been submitted successfully.");
+                      setIsWriteReviewOpen(false);
+                      setReviewRating(0);
+                      setReviewText("");
+                      setReviewCourse("");
+                      setIsAnonymousReview(false);
+                    } catch (error) {
+                      console.error("Error submitting review:", error);
+                      alert(error.response?.data?.detail || "Failed to submit review. Try again later.");
+                    }
                   } else {
                     alert("Please provide a rating and write at least 50 characters.");
                   }
@@ -1067,6 +1133,36 @@ export function CollegeDetail({ collegeId, onBack }) {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Student Register Modal */}
+      <StudentRegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        collegeId={college.id}
+        collegeName={college.name}
+        onSuccess={(data) => {
+          // data should contain user and token
+          if (onLogin && data) {
+            onLogin(data);
+            localStorage.setItem('user', JSON.stringify(data));
+            localStorage.setItem('token', data.token);
+            // Alert success
+            alert(`Thanks for registering as a student at ${college.name}! You can now write a review.`);
+          }
+        }}
+      />
+
+      {/* Login Dialog Integration */}
+      <LoginDialog
+        isOpen={isLoginDialogOpen}
+        onClose={() => setIsLoginDialogOpen(false)}
+        onLoginSuccess={(data) => {
+          if (onLogin && data) {
+             onLogin(data);
+             setIsLoginDialogOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }

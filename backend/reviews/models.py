@@ -6,6 +6,7 @@ class Review(models.Model):
     college = models.ForeignKey('colleges.College', on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
     text = models.TextField()
+    is_anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

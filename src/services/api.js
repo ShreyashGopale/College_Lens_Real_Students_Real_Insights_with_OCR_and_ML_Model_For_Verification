@@ -112,6 +112,12 @@ export const authService = {
     register: async (userData) => {
         const response = await api.post('users/register/', userData);
         return response.data;
+    },
+    studentRegister: async (formData) => {
+        const response = await api.post('users/student-register/', formData, {
+            headers: { 'Content-Type': undefined } // Force Axios to calculate multipart boundary
+        });
+        return response.data;
     }
 };
 

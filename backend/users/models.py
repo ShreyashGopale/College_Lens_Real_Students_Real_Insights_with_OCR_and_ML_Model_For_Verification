@@ -10,8 +10,10 @@ class User(AbstractUser):
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
-    # Add other student-specific fields here if needed
-    
+    college = models.ForeignKey('colleges.College', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    branch = models.CharField(max_length=100, null=True, blank=True)
+    roll_number = models.CharField(max_length=50, null=True, blank=True)
+    marksheet_first_year = models.FileField(upload_to='marksheets/', null=True, blank=True)
     def __str__(self):
         return f"{self.user.username} Profile"
 

@@ -72,7 +72,7 @@ export default function App() {
             {showCounsellingForm ? (
                 <CounsellingForm onBack={handleBackFromCounselling} />
             ) : selectedCollegeId ? (
-                <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} />
+                <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} user={user} onLogin={handleLogin} />
             ) : (
                 <>
                     <HeroSection onGetCounselling={handleGetCounselling} />

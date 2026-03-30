@@ -17,7 +17,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'college', 'college_name', 'rating', 'text', 'created_at', 'comments']
+        fields = ['id', 'user', 'college', 'college_name', 'rating', 'text', 'is_anonymous', 'created_at', 'comments']
         read_only_fields = ['user', 'created_at']
 
     def create(self, validated_data):

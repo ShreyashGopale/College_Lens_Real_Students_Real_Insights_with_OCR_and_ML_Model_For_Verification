@@ -10,11 +10,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        # Check if user has already reviewed this college
-        college = serializer.validated_data['college']
         user = self.request.user
-        if Review.objects.filter(user=user, college=college).exists():
-            raise ValidationError({"detail": "You have already reviewed this college."})
         serializer.save(user=user)
 
     def get_queryset(self):

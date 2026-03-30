@@ -26,7 +26,13 @@ export function LoginDialog({ isOpen, onClose, onLoginSuccess }) {
                 body: JSON.stringify({ username, password }),
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                data = await response.json();
+            } else {
+                throw new Error("Server did not return JSON. Backend or Database connection issue.");
+            }
 
             if (response.ok) {
                 // Store token and user data
@@ -39,7 +45,8 @@ export function LoginDialog({ isOpen, onClose, onLoginSuccess }) {
                 setError(data.error || "Login failed. Please check your credentials.");
             }
         } catch (err) {
-            setError("Network error. Please try again.");
+            console.error("Login failed:", err);
+            setError(err.message === "Failed to fetch" ? "Network error. Is backend running?" : (err.message || "Network error. Please try again."));
         } finally {
             setLoading(false);
         }

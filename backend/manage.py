@@ -15,6 +15,13 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    if len(sys.argv) > 1 and sys.argv[1] == 'runserver' and os.environ.get('RUN_MAIN') != 'true':
+        try:
+            # Auto-migrate on runserver to prevent database connection/missing table issues for fresh pulls
+            execute_from_command_line([sys.argv[0], 'migrate'])
+        except Exception as e:
+            print(f"Auto-migration failed: {e}")
+
     execute_from_command_line(sys.argv)
 
 
