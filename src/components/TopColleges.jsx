@@ -27,7 +27,9 @@ export function TopColleges({ onCollegeClick }) {
                     fees: c.courses && c.courses.length > 0 ? `₹${c.courses[0].fee}` : "Fees N/A",
                     reviewCount: c.review_count,
                     starRating: c.average_rating,
-                    ranking: "Ranked Top 100" // Placeholder
+                    ranking: "Ranked Top 100", // Placeholder
+                    placement: c.highest_package ? `${c.highest_package} LPA` : (c.average_package ? `${c.average_package} LPA (Avg)` : "N/A"),
+                    cutoffStat: c.cutoffs && c.cutoffs.length > 0 ? (c.cutoffs.find(cu => cu.caste === 'General')?.score || c.cutoffs[0].score) : "N/A"
                 }));
                 setColleges(transformed);
             } catch (error) {
@@ -91,6 +93,18 @@ export function TopColleges({ onCollegeClick }) {
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="text-blue-600 text-sm">{college.fees}</span>
                                     <span className="text-gray-600 text-sm">{college.reviewCount} reviews</span>
+                                </div>
+
+                                {/* Placement & Cutoffs Highlights */}
+                                <div className="flex items-center justify-between mb-3 bg-blue-50 p-2 rounded">
+                                    <div>
+                                        <span className="block text-xs text-blue-500">Highest Package</span>
+                                        <span className="text-sm font-semibold text-blue-800">{college.placement}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block text-xs text-blue-500">Top Cutoff</span>
+                                        <span className="text-sm font-semibold text-blue-800">{college.cutoffStat}</span>
+                                    </div>
                                 </div>
 
                                 {/* Ranking */}

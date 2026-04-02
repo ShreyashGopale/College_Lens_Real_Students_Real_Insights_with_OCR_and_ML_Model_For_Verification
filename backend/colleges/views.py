@@ -2,8 +2,8 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import College, GalleryMedia
-from .serializers import CollegeSerializer, GalleryMediaSerializer
+from .models import College, GalleryMedia, Cutoff
+from .serializers import CollegeSerializer, GalleryMediaSerializer, CutoffSerializer
 
 
 class CollegeViewSet(viewsets.ModelViewSet):
@@ -66,3 +66,13 @@ class GalleryMediaViewSet(viewsets.ModelViewSet):
             if name.endswith(('.mp4', '.mov', '.avi', '.webm', '.mkv')):
                 media_type = 'video'
         serializer.save(media_type=media_type)
+
+class CutoffViewSet(viewsets.ModelViewSet):
+    serializer_class = CutoffSerializer
+    
+    def get_queryset(self):
+        queryset = Cutoff.objects.all()
+        college_id = self.request.query_params.get('college')
+        if college_id:
+            queryset = queryset.filter(college_id=college_id)
+        return queryset

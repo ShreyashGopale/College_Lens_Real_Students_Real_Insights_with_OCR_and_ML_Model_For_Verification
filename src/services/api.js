@@ -144,4 +144,19 @@ export const galleryService = {
     }
 };
 
+export const cutoffService = {
+    create: async (data) => {
+        const response = await api.post('colleges/cutoffs/', data);
+        return response.data;
+    },
+    update: async (id, data) => {
+        const response = await api.patch(`colleges/cutoffs/${id}/`, data);
+        return response.data;
+    },
+    delete: async (id) => {
+        const response = await api.delete(`colleges/cutoffs/${id}/`);
+        return response.data;
+    }
+};
+
 export default api;

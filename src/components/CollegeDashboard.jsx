@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { collegeService, reviewService, galleryService } from "../services/api";
+import { collegeService, reviewService, galleryService, cutoffService } from "../services/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Star, Users, MessageSquare, LogOut, MapPin, Building, Briefcase, IndianRupee, Upload, Camera, Trash2, Image, Video, Plus } from "lucide-react";
+import { Star, Users, MessageSquare, LogOut, MapPin, Building, Briefcase, IndianRupee, Upload, Camera, Trash2, Image, Video, Plus, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
-export function CollegeDashboard({ user, onLogout }) {
+export function CollegeDashboard({ user, onLogout, onGoHome }) {
     const [college, setCollege] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
     // Gallery State
     const [galleryMedia, setGalleryMedia] = useState([]);
@@ -32,8 +34,20 @@ export function CollegeDashboard({ user, onLogout }) {
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [isEditingDetails, setIsEditingDetails] = useState(false);
+    const [isEditingFacilities, setIsEditingFacilities] = useState(false);
     const [editFormData, setEditFormData] = useState({});
     const [uploading, setUploading] = useState(false);
+
+    // Cutoffs State
+    const [cutoffs, setCutoffs] = useState([]);
+    const [isEditingCutoff, setIsEditingCutoff] = useState(null); // null if creating or ID if editing
+    const [showCutoffForm, setShowCutoffForm] = useState(false);
+    const [cutoffFormData, setCutoffFormData] = useState({
+        course: '',
+        year: new Date().getFullYear(),
+        caste: 'General',
+        score: ''
+    });
 
     // New College Creation State
     const [newCollegeData, setNewCollegeData] = useState({
@@ -57,7 +71,10 @@ export function CollegeDashboard({ user, onLogout }) {
                 location: college.location || "",
                 established_year: college.established_year || "",
                 description: college.description || "",
-                website: college.website || ""
+                website: college.website || "",
+                hostel_available: college.hostel_available || false,
+                hostel_fees: college.hostel_fees || "",
+                bus_available: college.bus_available || false
             });
         }
     }, [college]);
@@ -87,7 +104,10 @@ export function CollegeDashboard({ user, onLogout }) {
                 location: editFormData.location,
                 established_year: editFormData.established_year,
                 website: editFormData.website,
-                description: editFormData.description
+                description: editFormData.description,
+                hostel_available: editFormData.hostel_available,
+                hostel_fees: editFormData.hostel_fees,
+                bus_available: editFormData.bus_available
             };
             const updatedCollege = await collegeService.update(college.id, detailsData);
             setCollege({ ...college, ...updatedCollege });
@@ -99,6 +119,75 @@ export function CollegeDashboard({ user, onLogout }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleUpdateCollegeFacilities = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const facilitiesData = {
+                hostel_available: editFormData.hostel_available,
+                hostel_fees: editFormData.hostel_fees,
+                bus_available: editFormData.bus_available
+            };
+            const updatedCollege = await collegeService.update(college.id, facilitiesData);
+            setCollege({ ...college, ...updatedCollege });
+            setIsEditingFacilities(false);
+            alert("Facilities updated successfully!");
+        } catch (error) {
+            console.error("Failed to update facilities", error);
+            alert("Failed to update facilities. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveCutoff = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const data = { ...cutoffFormData, college: college.id };
+            if (isEditingCutoff) {
+                const updatedCutoff = await cutoffService.update(isEditingCutoff, data);
+                setCutoffs(prev => prev.map(c => c.id === isEditingCutoff ? updatedCutoff : c));
+                alert("Cutoff updated successfully!");
+            } else {
+                const newCutoff = await cutoffService.create(data);
+                setCutoffs(prev => [...prev, newCutoff]);
+                alert("Cutoff added successfully!");
+            }
+            setShowCutoffForm(false);
+            setCutoffFormData({ course: '', year: new Date().getFullYear(), caste: 'General', score: '' });
+            setIsEditingCutoff(null);
+        } catch (error) {
+            console.error("Failed to save cutoff", error);
+            alert("Failed to save cutoff. Check if a cutoff for this caste/course/year already exists.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteCutoff = async (id) => {
+        if (!confirm("Are you sure you want to delete this cutoff?")) return;
+        try {
+            await cutoffService.delete(id);
+            setCutoffs(prev => prev.filter(c => c.id !== id));
+            alert("Cutoff deleted seamlessly!");
+        } catch (error) {
+            console.error("Failed to delete cutoff", error);
+            alert("Failed to delete cutoff");
+        }
+    };
+
+    const handleEditCutoffInit = (cutoff) => {
+        setIsEditingCutoff(cutoff.id);
+        setCutoffFormData({
+            course: cutoff.course,
+            year: cutoff.year,
+            caste: cutoff.caste,
+            score: cutoff.score
+        });
+        setShowCutoffForm(true);
     };
 
     const handleCreateCollege = async (e) => {
@@ -168,6 +257,11 @@ export function CollegeDashboard({ user, onLogout }) {
                 // Fetch gallery media
                 const galleryData = await galleryService.getByCollege(user.college_id);
                 setGalleryMedia(galleryData);
+
+                // Initialize cutoffs locally
+                if (collegeData.cutoffs) {
+                    setCutoffs(collegeData.cutoffs);
+                }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
                 alert("Failed to load dashboard data. Please try refreshing.");
@@ -252,7 +346,7 @@ export function CollegeDashboard({ user, onLogout }) {
                             </Button>
                         </form>
                         <div className="mt-4 text-center">
-                            <Button variant="link" onClick={onLogout} className="text-gray-500">
+                            <Button variant="link" onClick={() => setIsLogoutDialogOpen(true)} className="text-gray-500">
                                 Logout
                             </Button>
                         </div>
@@ -271,7 +365,7 @@ export function CollegeDashboard({ user, onLogout }) {
             <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
                 <h2 className="text-xl font-bold mb-2">College Not Found</h2>
                 <p className="text-gray-600 mb-4">Could not load college details.</p>
-                <Button onClick={onLogout}>Logout</Button>
+                <Button onClick={() => setIsLogoutDialogOpen(true)}>Logout</Button>
             </div>
         );
     }
@@ -281,18 +375,23 @@ export function CollegeDashboard({ user, onLogout }) {
             {/* Dashboard Header */}
             <header className="bg-white border-b shadow-sm">
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                            {college.name.substring(0, 2)}
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-                            <p className="text-sm text-gray-500">{college.name}</p>
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="icon" onClick={onGoHome} className="text-gray-500 hover:text-gray-900 border" title="Go to Home Page">
+                            <Home className="w-5 h-5" />
+                        </Button>
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                {college.name.substring(0, 2)}
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                                <p className="text-sm text-gray-500">{college.name}</p>
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-gray-600">Welcome, {user.username}</span>
-                        <Button variant="outline" size="sm" onClick={onLogout} className="gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setIsLogoutDialogOpen(true)} className="gap-2">
                             <LogOut className="w-4 h-4" />
                             Logout
                         </Button>
@@ -354,6 +453,8 @@ export function CollegeDashboard({ user, onLogout }) {
                     <TabsList className="mb-6">
                         <TabsTrigger value="reviews">Student Reviews</TabsTrigger>
                         <TabsTrigger value="placements">Placements</TabsTrigger>
+                        <TabsTrigger value="facilities">Facilities</TabsTrigger>
+                        <TabsTrigger value="cutoffs">Cutoffs</TabsTrigger>
                         <TabsTrigger value="gallery">Gallery</TabsTrigger>
                         <TabsTrigger value="details">College Details</TabsTrigger>
                     </TabsList>
@@ -544,6 +645,8 @@ export function CollegeDashboard({ user, onLogout }) {
                                                 placeholder="Tell us about the college..."
                                             />
                                         </div>
+                                        
+                                        {/* Facilities Section in Edit Form */}
                                         <Button type="submit" className="w-full">Save Changes</Button>
                                     </form>
                                 ) : (
@@ -577,6 +680,179 @@ export function CollegeDashboard({ user, onLogout }) {
                                         </div>
                                     </>
                                 )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="facilities">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>Campus Facilities</CardTitle>
+                                <Button variant="outline" size="sm" onClick={() => setIsEditingFacilities(!isEditingFacilities)}>
+                                    {isEditingFacilities ? "Cancel Edit" : "Edit Facilities"}
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {isEditingFacilities ? (
+                                    <form onSubmit={handleUpdateCollegeFacilities} className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-3 bg-gray-50 p-4 rounded-lg border">
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        id="hostel_available"
+                                                        checked={editFormData.hostel_available}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, hostel_available: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                    />
+                                                    <Label htmlFor="hostel_available" className="text-base cursor-pointer">Hostel Facility Available</Label>
+                                                </div>
+                                                {editFormData.hostel_available && (
+                                                    <div className="ml-6 mt-3">
+                                                        <Label className="text-sm text-gray-500">Hostel Fees</Label>
+                                                        <Input
+                                                            className="mt-1"
+                                                            value={editFormData.hostel_fees}
+                                                            onChange={(e) => setEditFormData({ ...editFormData, hostel_fees: e.target.value })}
+                                                            placeholder="e.g. ₹50,000/year"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-lg border">
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        id="bus_available"
+                                                        checked={editFormData.bus_available}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, bus_available: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                    />
+                                                    <Label htmlFor="bus_available" className="text-base cursor-pointer">Bus Facility Available</Label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Button type="submit" className="w-full">Save Changes</Button>
+                                    </form>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white p-6 rounded-lg border flex items-start gap-4">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${college.hostel_available ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                <Building className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">Hostel Facility</h3>
+                                                <p className={`mt-1 font-medium ${college.hostel_available ? "text-green-600" : "text-gray-500"}`}>
+                                                    {college.hostel_available ? "✓ Available" : "✗ Not Available"}
+                                                </p>
+                                                {college.hostel_available && college.hostel_fees && (
+                                                    <p className="text-sm text-gray-600 mt-2"><strong>Fees:</strong> {college.hostel_fees}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-white p-6 rounded-lg border flex items-start gap-4">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${college.bus_available ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                {/* Reusing MapPin for bus temporarily, could be a Bus icon if imported */}
+                                                <MapPin className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">Bus Facility</h3>
+                                                <p className={`mt-1 font-medium ${college.bus_available ? "text-green-600" : "text-gray-500"}`}>
+                                                    {college.bus_available ? "✓ Available" : "✗ Not Available"}
+                                                </p>
+                                                {college.bus_available && (
+                                                    <p className="text-sm text-gray-600 mt-2"><strong>Note:</strong> Bus fees depends on route</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="cutoffs">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>Admission Cutoffs</CardTitle>
+                                <Button size="sm" onClick={() => { setShowCutoffForm(!showCutoffForm); setIsEditingCutoff(null); setCutoffFormData({ course: '', year: new Date().getFullYear(), caste: 'General', score: '' }); }}>
+                                    {showCutoffForm ? "Cancel" : "Add Cutoff"}
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {showCutoffForm && (
+                                    <div className="bg-gray-50 p-6 rounded-lg border mb-8">
+                                        <h4 className="font-semibold text-gray-900 mb-4">{isEditingCutoff ? "Edit Cutoff" : "Add New Cutoff"}</h4>
+                                        <form onSubmit={handleSaveCutoff} className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Course Name</Label>
+                                                    <Input required value={cutoffFormData.course} onChange={(e) => setCutoffFormData({ ...cutoffFormData, course: e.target.value })} placeholder="e.g. B.Tech Computer Engineering" />
+                                                </div>
+                                                <div>
+                                                    <Label>Year</Label>
+                                                    <select required className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent" value={cutoffFormData.year} onChange={(e) => setCutoffFormData({ ...cutoffFormData, year: parseInt(e.target.value) })}>
+                                                        {[0, 1, 2].map(offset => {
+                                                            const yearOption = new Date().getFullYear() - offset;
+                                                            return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                                                        })}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <Label>Caste / Category</Label>
+                                                    <select required className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent" value={cutoffFormData.caste} onChange={(e) => setCutoffFormData({ ...cutoffFormData, caste: e.target.value })}>
+                                                        <option value="General">General</option>
+                                                        <option value="OBC">OBC</option>
+                                                        <option value="SC">SC</option>
+                                                        <option value="ST">ST</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <Label>Cutoff Score / Percentile</Label>
+                                                    <Input required value={cutoffFormData.score} onChange={(e) => setCutoffFormData({ ...cutoffFormData, score: e.target.value })} placeholder="e.g. 98.5" />
+                                                </div>
+                                            </div>
+                                            <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save Cutoff"}</Button>
+                                        </form>
+                                    </div>
+                                )}
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-100 text-gray-700">
+                                                <th className="p-3 text-left border">Course</th>
+                                                <th className="p-3 text-center border">Year</th>
+                                                <th className="p-3 text-center border">Caste</th>
+                                                <th className="p-3 text-center border">Cutoff Score</th>
+                                                <th className="p-3 text-center border">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cutoffs.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="p-6 text-center text-gray-500">No cutoff data available.</td>
+                                                </tr>
+                                            ) : (
+                                                cutoffs.sort((a,b) => b.year - a.year).map(cutoff => (
+                                                    <tr key={cutoff.id} className="border-b">
+                                                        <td className="p-3 border text-gray-800">{cutoff.course}</td>
+                                                        <td className="p-3 border text-center text-gray-600">{cutoff.year}</td>
+                                                        <td className="p-3 border text-center font-semibold text-blue-600">{cutoff.caste}</td>
+                                                        <td className="p-3 border text-center text-gray-800">{cutoff.score}</td>
+                                                        <td className="p-3 border text-center">
+                                                            <div className="flex justify-center gap-2">
+                                                                <Button variant="outline" size="sm" onClick={() => handleEditCutoffInit(cutoff)}>Edit</Button>
+                                                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteCutoff(cutoff.id)}>Delete</Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -718,6 +994,23 @@ export function CollegeDashboard({ user, onLogout }) {
                     </TabsContent>
                 </Tabs>
             </main>
+
+            {/* Logout Confirmation Dialog */}
+            <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <DialogContent className="sm:max-w-xs">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg">Do you want to Log out?</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+                            No
+                        </Button>
+                        <Button variant="destructive" onClick={() => { setIsLogoutDialogOpen(false); onLogout(); }}>
+                            Yes
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

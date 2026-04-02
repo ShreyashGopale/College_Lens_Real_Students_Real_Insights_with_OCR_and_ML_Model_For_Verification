@@ -1,4 +1,4 @@
-import { Search, Bell, User, Eye, EyeOff, Upload, LogOut, ChevronDown } from "lucide-react";
+import { Search, Bell, User, Eye, EyeOff, Upload, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useState } from "react";
@@ -13,11 +13,12 @@ import { LoginDialog } from "./auth/LoginDialog";
 import { collegeService } from "../services/api";
 import { useEffect } from "react";
 
-export function Header({ onLogoClick, user, onLogin, onLogout }) {
+export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClick, onDashboardClick }) {
 
     const [isLoginDropdownOpen, setIsLoginDropdownOpen] = useState(false);
     const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
     // const [loggedInUser, setLoggedInUser] = useState(null); // Removed local state
 
     const [accountType, setAccountType] = useState("student");
@@ -146,8 +147,12 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
     };
 
     const handleLogoutClick = () => {
+        setIsLogoutDialogOpen(true);
+    };
+
+    const confirmLogout = () => {
+        setIsLogoutDialogOpen(false);
         onLogout();
-        // setLoggedInUser(null);
     };
 
     // Wrapper for LoginDialog success
@@ -181,7 +186,19 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                             className="pl-10 pr-4 py-2 w-full"
                         />
                     </div>
-                    <Button className="bg-yellow-400 text-black hover:bg-yellow-500 whitespace-nowrap">
+                    <Button 
+                        className="bg-yellow-400 text-black hover:bg-yellow-500 whitespace-nowrap"
+                        onClick={() => {
+                            if (user?.role === 'student' && user?.college_id) {
+                                if (onWriteReviewClick) onWriteReviewClick(user.college_id);
+                            } else if (!user) {
+                                setIsLoginDialogOpen(true);
+                                alert("Please log in as a student to write a review for your college.");
+                            } else if (user?.role === 'student' && !user?.college_id) {
+                                alert("You are not associated with a specific college yet.");
+                            }
+                        }}
+                    >
                         Write a Review
                     </Button>
                 </div>
@@ -204,7 +221,19 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={handleLogoutClick} className="cursor-pointer">
+                                {user.role === 'college_admin' && (
+                                    <DropdownMenuItem onClick={() => onDashboardClick && onDashboardClick()} className="cursor-pointer">
+                                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                                        Dashboard
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem 
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                        handleLogoutClick();
+                                    }} 
+                                    className="cursor-pointer"
+                                >
                                     <LogOut className="w-4 h-4 mr-2" />
                                     Logout
                                 </DropdownMenuItem>
@@ -655,7 +684,10 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                         {/* Sign In Link */}
                         <p className="text-center text-xs text-gray-500">
                             Already have an account?{" "}
-                            <button className="text-blue-600 hover:underline">
+                            <button
+                                className="text-blue-600 hover:underline"
+                                onClick={() => { setIsCreateAccountOpen(false); setIsLoginDialogOpen(true); }}
+                            >
                                 Sign in
                             </button>
                         </p>
@@ -668,6 +700,23 @@ export function Header({ onLogoClick, user, onLogin, onLogout }) {
                 onClose={() => setIsLoginDialogOpen(false)}
                 onLoginSuccess={handleLoginDialogSuccess}
             />
+
+            {/* Logout Confirmation Dialog */}
+            <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <DialogContent className="sm:max-w-xs">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg">Do you want to Log out?</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-4">
+                        <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+                            No
+                        </Button>
+                        <Button variant="destructive" onClick={confirmLogout}>
+                            Yes
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </header>
 
     );

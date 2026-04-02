@@ -12,6 +12,8 @@ import { collegesData } from "./components/collegeData";
 
 export default function App() {
     const [selectedCollegeId, setSelectedCollegeId] = useState(null);
+    const [viewingDashboard, setViewingDashboard] = useState(true);
+    const [collegeDetailInitialTab, setCollegeDetailInitialTab] = useState("info");
     const [showCounsellingForm, setShowCounsellingForm] = useState(false);
     const [user, setUser] = useState(null); // Global user state: { username, role, college_id, ... }
 
@@ -25,6 +27,13 @@ export default function App() {
 
     const handleCollegeClick = (collegeId) => {
         setSelectedCollegeId(collegeId);
+        setCollegeDetailInitialTab("info");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleWriteReviewClick = (collegeId) => {
+        setSelectedCollegeId(collegeId);
+        setCollegeDetailInitialTab("reviews");
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -57,8 +66,8 @@ export default function App() {
     };
 
     // Routing Logic
-    if (user?.role === 'college_admin') {
-        return <CollegeDashboard user={user} onLogout={handleLogout} />;
+    if (user?.role === 'college_admin' && viewingDashboard) {
+        return <CollegeDashboard user={user} onLogout={handleLogout} onGoHome={() => setViewingDashboard(false)} />;
     }
 
     return (
@@ -68,11 +77,13 @@ export default function App() {
                 user={user}
                 onLogin={handleLogin}
                 onLogout={handleLogout}
+                onWriteReviewClick={handleWriteReviewClick}
+                onDashboardClick={() => setViewingDashboard(true)}
             />
             {showCounsellingForm ? (
                 <CounsellingForm onBack={handleBackFromCounselling} />
             ) : selectedCollegeId ? (
-                <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} user={user} onLogin={handleLogin} />
+                <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} user={user} onLogin={handleLogin} initialTab={collegeDetailInitialTab} />
             ) : (
                 <>
                     <HeroSection onGetCounselling={handleGetCounselling} />
