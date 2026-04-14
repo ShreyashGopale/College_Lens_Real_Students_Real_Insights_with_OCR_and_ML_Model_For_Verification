@@ -68,6 +68,9 @@ python manage.py runserver
 Open a **new, separate terminal window** (do not close the backend one) in the root directory:
 
 ```bash
+# Navigate to the frontend folder
+cd Frontend
+
 # Install all required Node packages
 npm install
 
