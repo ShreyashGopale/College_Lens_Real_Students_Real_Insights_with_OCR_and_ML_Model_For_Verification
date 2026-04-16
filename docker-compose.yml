@@ -10,8 +10,13 @@ services:
     environment:
       - AWS_DEFAULT_REGION=ap-south-1
       - S3_BUCKET_NAME=college-lens-ml-model
-      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DJANGO_SETTINGS_MODULE=college_review_backend.settings
       - DEBUG=False
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=django-insecure-change-this-to-random-string
+    volumes:
+      # Media files persist rahe containers restart pe bhi
+      - media_data:/app/media
     ports:
       - "8000:8000"
     restart: always
@@ -26,3 +31,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  media_data:

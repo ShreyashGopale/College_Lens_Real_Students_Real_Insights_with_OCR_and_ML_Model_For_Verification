@@ -7,18 +7,21 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     curl \
+    default-libmysqlclient-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# backend/ folder se requirements copy karo
 COPY backend/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir boto3
 
-# poora backend/ folder copy karo
 COPY backend/ .
+
+# Media folder banana
+RUN mkdir -p /app/media
 
 EXPOSE 8000
 
