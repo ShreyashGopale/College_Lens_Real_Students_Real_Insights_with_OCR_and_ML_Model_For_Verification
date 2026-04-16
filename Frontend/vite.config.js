@@ -52,8 +52,15 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'build',
   },
-  server: {
+ server: {
     port: 3000,
     open: true,
-  },
+    proxy: {
+      '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    }
+},
 });
