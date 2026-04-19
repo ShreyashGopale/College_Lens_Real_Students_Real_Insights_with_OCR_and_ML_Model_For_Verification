@@ -1,20 +1,23 @@
-# Stage 1: React Build
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Frontend/ se package files copy karo
 COPY Frontend/package*.json ./
 
 RUN npm install
 
+# Poora Frontend/ copy karo
 COPY Frontend/ .
 
+# Production build — outDir 'build' hai teri vite.config mein
 RUN npm run build
 
-# Stage 2: Nginx
+# Stage 2: Nginx se serve
 FROM nginx:alpine
 
-# 'build' hai kyunki vite.config.js mein outDir: 'build' hai
+# 'build' folder copy karo (dist nahi!)
 COPY --from=builder /app/build /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf

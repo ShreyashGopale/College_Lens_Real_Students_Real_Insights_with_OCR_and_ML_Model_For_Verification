@@ -2,25 +2,35 @@ version: '3.8'
 
 services:
 
+  # ─────────────────────────────
+  # Django Backend
+  # ─────────────────────────────
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
     container_name: college_lens_backend
     environment:
-      - AWS_DEFAULT_REGION=ap-south-1
-      - S3_BUCKET_NAME=college-lens-ml-model
       - DJANGO_SETTINGS_MODULE=college_review_backend.settings
+      - SECRET_KEY=django-super-secret-key-change-in-production
       - DEBUG=False
       - ALLOWED_HOSTS=*
-      - SECRET_KEY=django-insecure-change-this-to-random-string
+      # S3 ML Model ke liye
+      - AWS_DEFAULT_REGION=ap-south-1
+      - S3_BUCKET_NAME=college-lens-ml-model
+      # SQLite use hoga kyunki DB_NAME set nahi hai
     volumes:
-      # Media files persist rahe containers restart pe bhi
+      # SQLite database persist rahega
+      - sqlite_data:/app/db.sqlite3
+      # Uploaded files persist rahenge
       - media_data:/app/media
     ports:
       - "8000:8000"
     restart: always
 
+  # ─────────────────────────────
+  # React Frontend
+  # ─────────────────────────────
   frontend:
     build:
       context: .
@@ -33,4 +43,5 @@ services:
     restart: always
 
 volumes:
+  sqlite_data:
   media_data:

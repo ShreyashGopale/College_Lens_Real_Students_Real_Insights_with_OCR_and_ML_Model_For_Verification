@@ -3,26 +3,30 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
-    libpq-dev \
     gcc \
     g++ \
     curl \
-    default-libmysqlclient-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# requirements copy karo
 COPY backend/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+# boto3 S3 ke liye
 RUN pip install --no-cache-dir boto3
 
+# poora backend copy karo
 COPY backend/ .
 
-# Media folder banana
+# Media aur SQLite ke liye folders
 RUN mkdir -p /app/media
+RUN mkdir -p /app/ml_model
 
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Migrate karke server start karo
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
