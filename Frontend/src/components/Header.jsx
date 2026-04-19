@@ -86,7 +86,7 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
 
         setLoading(true);
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/users/register/", {
+            const response = await fetch("/api/users/register/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -161,7 +161,7 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
         setIsLoginDialogOpen(false);
     };
 
-    return (
+    return (
         <header className="bg-white border-b">
             {/* Main Header */}
             <div className="px-6 py-3 flex items-center justify-between gap-6">

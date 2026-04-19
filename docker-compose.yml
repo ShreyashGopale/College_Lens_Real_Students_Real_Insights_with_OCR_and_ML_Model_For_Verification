@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: college_lens_backend
+    environment:
+      - AWS_DEFAULT_REGION=ap-south-1
+      - S3_BUCKET_NAME=college-lens-ml-model
+      - DJANGO_SETTINGS_MODULE=college_review_backend.settings
+      - DEBUG=False
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=django-insecure-change-this-to-random-string
+    volumes:
+      # Media files persist rahe containers restart pe bhi
+      - media_data:/app/media
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: college_lens_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  media_data:

@@ -1,0 +1,18 @@
+# ML model files ignore (S3 se load honge)
+backend/ml_model/*.pkl
+backend/ml_model/*.csv
+
+# Frontend build artifacts
+Frontend/node_modules/
+Frontend/dist/
+
+# Python cache
+__pycache__/
+*.pyc
+.env
+venv/
+
+# Git
+.git/
+.gitignore
+.vscode/
