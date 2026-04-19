@@ -42,21 +42,64 @@ class CounsellingRequestCreateView(generics.CreateAPIView):
     serializer_class = CounsellingRequestSerializer
     permission_classes = [AllowAny]
 
+from .verification import verify_student_documents
+from colleges.models import College
+
 class StudentCollegeRegisterView(generics.CreateAPIView):
     serializer_class = StudentCollegeRegisterSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
+        # 1. First, validate basics (usernames, passwords, formatting)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # 2. Extract files and form data for OCR verification
+        marksheet = request.FILES.get('marksheet_first_year')
+        fees_receipt = request.FILES.get('fees_receipt')
+        
+        college_id = request.data.get('college')
+        try:
+            college_obj = College.objects.get(id=college_id)
+            college_name = college_obj.name
+        except College.DoesNotExist:
+            return Response({'error': 'Selected college does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        form_data = {
+            'first_name': request.data.get('first_name'),
+            'middle_name': request.data.get('middle_name'),
+            'last_name': request.data.get('last_name'),
+            'college_name': college_name,
+            'degree_type': request.data.get('degree_type'),
+            'branch': request.data.get('branch')
+        }
+        
+        # 3. Perform OCR Verification
+        verification_results = verify_student_documents(marksheet, fees_receipt, form_data)
+        
+        if verification_results['status'] != 'Verified':
+            # Return detailed mismatched errors to the frontend pop-up
+            return Response({
+                'error': 'Verification Failed', 
+                'details': verification_results['errors'],
+                'ocr_data': verification_results
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 4. If verified, save the user and profile
         user = serializer.save()
+        
+        # Update the profile with the OCR verification data
+        if hasattr(user, 'student_profile'):
+            profile = user.student_profile
+            profile.verification_data = verification_results
+            profile.verification_status = 'Verified'
+            profile.save()
+            
         token, created = Token.objects.get_or_create(user=user)
         data = UserSerializer(user).data
         data['token'] = token.key
-        if hasattr(user, 'student_profile') and user.student_profile.college_id:
-            data['college_id'] = user.student_profile.college_id
-        else:
-            data['college_id'] = None
+        data['college_id'] = user.student_profile.college_id
+        
         return Response(data, status=status.HTTP_201_CREATED)
 
 import pandas as pd

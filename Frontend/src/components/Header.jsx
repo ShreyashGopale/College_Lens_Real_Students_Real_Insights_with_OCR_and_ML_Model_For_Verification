@@ -161,8 +161,7 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
         setIsLoginDialogOpen(false);
     };
 
-
-    return (
+    return (
         <header className="bg-white border-b">
             {/* Main Header */}
             <div className="px-6 py-3 flex items-center justify-between gap-6">
@@ -186,21 +185,23 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                             className="pl-10 pr-4 py-2 w-full"
                         />
                     </div>
-                    <Button 
-                        className="bg-yellow-400 text-black hover:bg-yellow-500 whitespace-nowrap"
-                        onClick={() => {
-                            if (user?.role === 'student' && user?.college_id) {
-                                if (onWriteReviewClick) onWriteReviewClick(user.college_id);
-                            } else if (!user) {
-                                setIsLoginDialogOpen(true);
-                                alert("Please log in as a student to write a review for your college.");
-                            } else if (user?.role === 'student' && !user?.college_id) {
-                                alert("You are not associated with a specific college yet.");
-                            }
-                        }}
-                    >
-                        Write a Review
-                    </Button>
+                    {user?.role !== 'college_admin' && (
+                        <Button 
+                            className="bg-yellow-400 text-black hover:bg-yellow-500 whitespace-nowrap"
+                            onClick={() => {
+                                if (user?.role === 'student' && user?.college_id) {
+                                    if (onWriteReviewClick) onWriteReviewClick(user.college_id);
+                                } else if (!user) {
+                                    setIsLoginDialogOpen(true);
+                                    alert("Please log in as a student to write a review for your college.");
+                                } else if (user?.role === 'student' && !user?.college_id) {
+                                    alert("You are not associated with a specific college yet.");
+                                }
+                            }}
+                        >
+                            Write a Review
+                        </Button>
+                    )}
                 </div>
 
                 {/* Right Actions */}
@@ -309,240 +310,23 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                                     ? "bg-yellow-400 text-black hover:bg-yellow-500"
                                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                     }`}
-                                onClick={() => setAccountType("college")}
-                            >
-                                College
+                                onClick={() => setAccountType("college")}>
+                                College Admin
                             </Button>
                         </div>
 
                         {/* Form Fields */}
                         <div className="space-y-2.5">
                             {accountType === "student" ? (
-                                <>
-                                    {/* Student Form Fields */}
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Name (As per result)</label>
-                                        <Input
-                                            id="firstName"
-                                            type="text"
-                                            placeholder="Enter name as per result"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.firstName}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* College 1 */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">
-                                                College 1 <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                id="college1"
-                                                className="w-full h-9 text-sm border border-input bg-background rounded-md px-3 py-1 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                required
-                                                value={formData.college1}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="">Select College</option>
-                                                {collegesList.map((col) => (
-                                                    <option key={col.id} value={col.name}>
-                                                        {col.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        {/* College 2 */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">
-                                                College 2 <span className="text-gray-400">(optional)</span>
-                                            </label>
-                                            <select
-                                                id="college2"
-                                                className="w-full h-9 text-sm border border-input bg-background rounded-md px-3 py-1 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                value={formData.college2}
-                                                onChange={handleInputChange}
-                                            >
-                                                <option value="">Select College</option>
-                                                {collegesList.map((col) => (
-                                                    <option key={col.id} value={col.name}>
-                                                        {col.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>                                        {/* Upload Marksheet for College 1 and 2 */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* College 1 Marksheet */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Upload Marksheet (College 1)</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="file"
-                                                    accept=".pdf"
-                                                    className="hidden"
-                                                    id="college1-marksheet"
-                                                />
-                                                <label
-                                                    htmlFor="college1-marksheet"
-                                                    className="flex items-center justify-center gap-2 w-full h-9 text-sm border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="text-xs">Choose PDF</span>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        {/* College 2 Marksheet */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Upload Marksheet (College 2)</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="file"
-                                                    accept=".pdf"
-                                                    className="hidden"
-                                                    id="college2-marksheet"
-                                                />
-                                                <label
-                                                    htmlFor="college2-marksheet"
-                                                    className="flex items-center justify-center gap-2 w-full h-9 text-sm border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="text-xs">Choose PDF</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Upload Fees Receipt for College 1 and 2 */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* College 1 Fees Receipt */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Upload Fees Receipt (College 1)</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="file"
-                                                    accept=".pdf"
-                                                    className="hidden"
-                                                    id="college1-fees"
-                                                />
-                                                <label
-                                                    htmlFor="college1-fees"
-                                                    className="flex items-center justify-center gap-2 w-full h-9 text-sm border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="text-xs">Choose PDF</span>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        {/* College 2 Fees Receipt */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Upload Fees Receipt (College 2)</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="file"
-                                                    accept=".pdf"
-                                                    className="hidden"
-                                                    id="college2-fees"
-                                                />
-                                                <label
-                                                    htmlFor="college2-fees"
-                                                    className="flex items-center justify-center gap-2 w-full h-9 text-sm border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="text-xs">Choose PDF</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Passing Year for College 1 and 2 */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* College 1 Passing Year */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Passing Year (College 1)</label>
-                                            <Input
-                                                type="text"
-                                                placeholder="e.g., 2024"
-                                                className="w-full h-9 text-sm"
-                                            />
-                                        </div>
-
-                                        {/* College 2 Passing Year */}
-                                        <div>
-                                            <label className="text-xs text-gray-700 mb-0.5 block">Passing Year (College 2)</label>
-                                            <Input
-                                                type="text"
-                                                placeholder="e.g., 2024"
-                                                className="w-full h-9 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Email-ID</label>
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            placeholder="you@example.com"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Username</label>
-                                        <Input
-                                            id="username"
-                                            type="text"
-                                            placeholder="Choose a username"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.username}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Password</label>
-                                        <div className="relative">
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="••••••••"
-                                                className="w-full pr-10 h-9 text-sm"
-                                                value={formData.password}
-                                                onChange={handleInputChange}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                            >
-                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
+                                <div className="text-center p-6 bg-gray-50 rounded-lg border my-4">
+                                    <h3 className="font-semibold text-lg text-blue-900 mb-2">Student Registration</h3>
+                                    <p className="text-sm text-gray-600">
+                                        Please search for your college name in the search bar above and login there using the "Register as Student" button on your specific college's page.
+                                    </p>
+                                </div>
                             ) : (
                                 <>
                                     {/* College Form Fields */}
-                                    {/* College Form Fields */}
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Full Name</label>
-                                        <Input
-                                            id="username"
-                                            type="text"
-                                            placeholder="John Doe"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.username}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
                                     <div>
                                         <label className="text-xs text-gray-700 mb-0.5 block">College Name</label>
                                         <Input
@@ -551,30 +335,6 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                                             placeholder="Enter College Name"
                                             className="w-full h-9 text-sm"
                                             value={formData.collegeName}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Location</label>
-                                        <Input
-                                            id="location"
-                                            type="text"
-                                            placeholder="City, State"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.location}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Website</label>
-                                        <Input
-                                            id="website"
-                                            type="url"
-                                            placeholder="https://example.com"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.website}
                                             onChange={handleInputChange}
                                         />
                                     </div>
@@ -592,36 +352,25 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                                     </div>
 
                                     <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Description</label>
-                                        <textarea
-                                            id="description"
-                                            placeholder="Brief description of the college..."
-                                            className="w-full min-h-[80px] text-sm border border-input bg-background rounded-md px-3 py-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                            value={formData.description}
+                                        <label className="text-xs text-gray-700 mb-0.5 block">Username</label>
+                                        <Input
+                                            id="username"
+                                            type="text"
+                                            placeholder="Choose a username"
+                                            className="w-full h-9 text-sm"
+                                            value={formData.username}
                                             onChange={handleInputChange}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Email</label>
+                                        <label className="text-xs text-gray-700 mb-0.5 block">College Email ID</label>
                                         <Input
                                             id="email"
                                             type="email"
-                                            placeholder="you@example.com"
+                                            placeholder="admin@college.edu"
                                             className="w-full h-9 text-sm"
                                             value={formData.email}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Mobile Number</label>
-                                        <Input
-                                            id="mobile"
-                                            type="tel"
-                                            placeholder="0123456789"
-                                            className="w-full h-9 text-sm"
-                                            value={formData.mobile}
                                             onChange={handleInputChange}
                                         />
                                     </div>
@@ -648,7 +397,7 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                                     </div>
 
                                     <div>
-                                        <label className="text-xs text-gray-700 mb-0.5 block">Confirm Password</label>
+                                        <label className="text-xs text-gray-700 mb-0.5 block mt-2">Re-enter Password</label>
                                         <div className="relative">
                                             <Input
                                                 id="confirmPassword"
@@ -667,7 +416,6 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                                             </button>
                                         </div>
                                     </div>
-
                                 </>
                             )}
                         </div>
@@ -676,7 +424,8 @@ export function Header({ onLogoClick, user, onLogin, onLogout, onWriteReviewClic
                         <Button
                             className="w-full bg-yellow-400 text-black hover:bg-yellow-500 h-9 text-sm"
                             onClick={handleSignUp}
-                            disabled={loading}
+                            disabled={loading || accountType === "student"}
+                            className={accountType === "student" ? "hidden" : ""}
                         >
                             {loading ? "Creating Account..." : "Sign Up"}
                         </Button>

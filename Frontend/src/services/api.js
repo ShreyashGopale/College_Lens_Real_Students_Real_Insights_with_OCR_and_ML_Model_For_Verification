@@ -35,9 +35,9 @@ export const collegeService = {
     },
 
     // Get all colleges
-    getAll: async () => {
+    getAll: async (params = {}) => {
         try {
-            const response = await api.get('colleges/');
+            const response = await api.get('colleges/', { params });
             return response.data;
         } catch (error) {
             console.error("Error fetching colleges:", error);
@@ -92,7 +92,8 @@ export const collegeService = {
 
 export const reviewService = {
     create: async (data) => {
-        const response = await api.post('reviews/', data);
+        const headers = data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' };
+        const response = await api.post('reviews/', data, { headers });
         return response.data;
     },
 
@@ -155,6 +156,21 @@ export const cutoffService = {
     },
     delete: async (id) => {
         const response = await api.delete(`colleges/cutoffs/${id}/`);
+        return response.data;
+    }
+};
+
+export const courseService = {
+    create: async (data) => {
+        const response = await api.post('colleges/courses/', data);
+        return response.data;
+    },
+    update: async (id, data) => {
+        const response = await api.patch(`colleges/courses/${id}/`, data);
+        return response.data;
+    },
+    delete: async (id) => {
+        const response = await api.delete(`colleges/courses/${id}/`);
         return response.data;
     }
 };

@@ -6,7 +6,7 @@ from django.db.models import Avg
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ['id', 'name', 'fee', 'duration']
+        fields = ['id', 'college', 'degree_type', 'name', 'fee', 'duration', 'established_year', 'average_package', 'number_of_students']
 
 class FacilitySerializer(serializers.ModelSerializer):
     class Meta:

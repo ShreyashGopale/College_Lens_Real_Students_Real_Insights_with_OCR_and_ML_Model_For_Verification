@@ -36,14 +36,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     # College specific fields for admin registration
     college_name = serializers.CharField(required=False, write_only=True)
-    location = serializers.CharField(required=False, write_only=True)
-    description = serializers.CharField(required=False, write_only=True)
-    website = serializers.URLField(required=False, write_only=True)
     established_year = serializers.IntegerField(required=False, write_only=True)
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'role', 'college_name', 'location', 'description', 'website', 'established_year')
+        fields = ('username', 'email', 'password', 'role', 'college_name', 'established_year')
 
     def create(self, validated_data):
         role = validated_data.get('role')
@@ -51,9 +48,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Extract college data
         college_data = {
             'name': validated_data.pop('college_name', None),
-            'location': validated_data.pop('location', None),
-            'description': validated_data.pop('description', None),
-            'website': validated_data.pop('website', None),
             'established_year': validated_data.pop('established_year', None),
         }
         
@@ -81,22 +75,30 @@ class CounsellingRequestSerializer(serializers.ModelSerializer):
 class StudentCollegeRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     college = serializers.PrimaryKeyRelatedField(queryset=College.objects.all(), required=True)
+    degree_type = serializers.CharField(max_length=100, required=True)
     branch = serializers.CharField(max_length=100, required=True)
-    roll_number = serializers.CharField(max_length=50, required=True)
+    first_name = serializers.CharField(max_length=100, required=True)
+    middle_name = serializers.CharField(max_length=100, required=True)
+    last_name = serializers.CharField(max_length=100, required=True)
     marksheet_first_year = serializers.FileField(required=True)
+    fees_receipt = serializers.FileField(required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'college', 'branch', 'roll_number', 'marksheet_first_year')
+        fields = ('username', 'email', 'password', 'college', 'degree_type', 'branch', 'first_name', 'middle_name', 'last_name', 'marksheet_first_year', 'fees_receipt')
 
     def create(self, validated_data):
         # Extract profile-specific data
         college = validated_data.pop('college')
+        degree_type = validated_data.pop('degree_type')
         branch = validated_data.pop('branch')
-        roll_number = validated_data.pop('roll_number')
+        first_name = validated_data.pop('first_name')
+        middle_name = validated_data.pop('middle_name')
+        last_name = validated_data.pop('last_name')
         marksheet = validated_data.pop('marksheet_first_year')
+        fees_receipt = validated_data.pop('fees_receipt')
         
-        # Create user
+        # User creation
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
@@ -104,13 +106,19 @@ class StudentCollegeRegisterSerializer(serializers.ModelSerializer):
             role='student'
         )
         
-        # Create student profile
+        # Create profile directly attaching physical parameters accurately
         StudentProfile.objects.create(
             user=user,
             college=college,
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            degree_type=degree_type,
             branch=branch,
-            roll_number=roll_number,
-            marksheet_first_year=marksheet
+            marksheet_first_year=marksheet,
+            fees_receipt=fees_receipt,
+            verification_status='Verified', # Base status - validation precedes this saving step natively upstream!
+            verification_data={}
         )
         
         return user

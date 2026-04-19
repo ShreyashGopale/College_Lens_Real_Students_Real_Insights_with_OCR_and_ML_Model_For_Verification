@@ -1,17 +1,23 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, parsers
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from .models import Review, Comment
+from .models import Review, Comment, ReviewImage
 from .serializers import ReviewSerializer, CommentSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all().order_by('-created_at')
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def perform_create(self, serializer):
         user = self.request.user
-        serializer.save(user=user)
+        review = serializer.save(user=user)
+        
+        # Handle multiple images
+        images = self.request.FILES.getlist('images')
+        for image in images:
+            ReviewImage.objects.create(review=review, image=image)
 
     def get_queryset(self):
         queryset = super().get_queryset()

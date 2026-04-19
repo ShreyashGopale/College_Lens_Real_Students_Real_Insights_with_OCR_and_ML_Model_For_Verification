@@ -23,38 +23,90 @@ export default function App() {
         if (storedUser && storedToken) {
             setUser(JSON.parse(storedUser));
         }
+
+        // --- HISTORY API SYNC ---
+        const syncStateFromURL = () => {
+            const params = new URLSearchParams(window.location.search);
+            const collegeId = params.get('collegeId');
+            const view = params.get('view');
+
+            if (collegeId) {
+                setSelectedCollegeId(parseInt(collegeId));
+                setShowCounsellingForm(false);
+                setViewingDashboard(false);
+            } else if (view === 'counselling') {
+                setShowCounsellingForm(true);
+                setSelectedCollegeId(null);
+                setViewingDashboard(false);
+            } else if (view === 'dashboard') {
+                setViewingDashboard(true);
+                setSelectedCollegeId(null);
+                setShowCounsellingForm(false);
+            } else {
+                setSelectedCollegeId(null);
+                setShowCounsellingForm(false);
+                setViewingDashboard(false);
+            }
+        };
+
+        // Sync on back/forward buttons
+        window.addEventListener('popstate', syncStateFromURL);
+        // Sync on initial load
+        syncStateFromURL();
+
+        return () => window.removeEventListener('popstate', syncStateFromURL);
     }, []);
+
+    const navigate = (state, query = '') => {
+        const url = window.location.pathname + query;
+        window.history.pushState(state, '', url);
+    };
 
     const handleCollegeClick = (collegeId) => {
         setSelectedCollegeId(collegeId);
         setCollegeDetailInitialTab("info");
+        navigate({ collegeId }, `?collegeId=${collegeId}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleWriteReviewClick = (collegeId) => {
         setSelectedCollegeId(collegeId);
         setCollegeDetailInitialTab("reviews");
+        navigate({ collegeId, tab: 'reviews' }, `?collegeId=${collegeId}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleBackToHome = () => {
         setSelectedCollegeId(null);
         setShowCounsellingForm(false);
+        setViewingDashboard(false);
+        navigate({ view: 'home' }, '/');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleGetCounselling = () => {
         setShowCounsellingForm(true);
+        navigate({ view: 'counselling' }, '?view=counselling');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleBackFromCounselling = () => {
         setShowCounsellingForm(false);
+        navigate({ view: 'home' }, '/');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDashboardClick = () => {
+        setViewingDashboard(true);
+        navigate({ view: 'dashboard' }, '?view=dashboard');
     };
 
     const handleLogin = (userData) => {
         setUser(userData);
+        if (userData.role === 'college_admin') {
+            setViewingDashboard(true);
+            navigate({ view: 'dashboard' }, '?view=dashboard');
+        }
     };
 
     const handleLogout = () => {
@@ -78,7 +130,7 @@ export default function App() {
                 onLogin={handleLogin}
                 onLogout={handleLogout}
                 onWriteReviewClick={handleWriteReviewClick}
-                onDashboardClick={() => setViewingDashboard(true)}
+                onDashboardClick={handleDashboardClick}
             />
             {showCounsellingForm ? (
                 <CounsellingForm onBack={handleBackFromCounselling} />
@@ -86,7 +138,7 @@ export default function App() {
                 <CollegeDetail collegeId={selectedCollegeId} onBack={handleBackToHome} user={user} onLogin={handleLogin} initialTab={collegeDetailInitialTab} />
             ) : (
                 <>
-                    <HeroSection onGetCounselling={handleGetCounselling} />
+                    <HeroSection onGetCounselling={handleGetCounselling} onCollegeClick={handleCollegeClick} />
                     <BrowseSection />
                     <TopColleges onCollegeClick={handleCollegeClick} />
                 </>

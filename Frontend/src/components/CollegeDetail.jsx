@@ -49,10 +49,9 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
           rating: data.average_rating || 0,
           yearEstablished: data.established_year,
           address: data.location, // Approximate
-          collegeFees: data.courses && data.courses.length > 0 ? `₹${data.courses[0].fee}` : "Contact for fees",
 
           // Adapting arrays
-          coursesOffered: data.courses ? data.courses.map(c => c.name) : [],
+          coursesOffered: data.courses || [],
           facilities: data.facilities ? data.facilities.map(f => ({ ...f, available: true })) : [],
           images: data.image ? [data.image] : ["https://images.unsplash.com/photo-1562774053-701939374585?w=1200"],
 
@@ -108,12 +107,14 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewCourse, setReviewCourse] = useState("");
+  const [reviewCategory, setReviewCategory] = useState("other");
+  const [reviewImages, setReviewImages] = useState([]);
   const [isAnonymousReview, setIsAnonymousReview] = useState(false);
 
-  // Check if user is logged in and registered for THIS specific college
+  // Check if user is logged in and registered for THIS specific college as a student
   const isLoggedIn = !!user;
   const currentUserName = user?.username || "Student";
-  const isRegisteredForThisCollege = isLoggedIn && String(user?.college_id) === String(college?.id);
+  const isRegisteredForThisCollege = isLoggedIn && String(user?.college_id) === String(college?.id) && user?.role === 'student';
 
   // Mock comments data for reviews
   const mockComments = {
@@ -428,32 +429,34 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                       <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
                       Courses Offered
                     </h3>
-                    <div className="grid grid-cols-1 gap-3">
-                      {college.coursesOffered.map((course, index) => (
-                        <div key={index} className="flex items-start gap-3 p-4 bg-blue-50/50 rounded-lg border border-blue-100 hover:bg-blue-100/50 transition-colors">
-                          <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-sm">{index + 1}</span>
-                          </div>
-                          <span className="text-gray-700 text-lg leading-relaxed">{course}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* College Fees */}
-                  <div>
-                    <h3 className="text-2xl text-blue-900 mb-6 flex items-center gap-2">
-                      <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
-                      College Fees
-                    </h3>
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-lg text-white">
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-5xl">{college.collegeFees}</span>
-                      </div>
-                      <p className="text-blue-100 mt-3">
-                        <span className="opacity-80">Please note:</span> Fees may vary by course and year.
-                        Contact the admission office for detailed fee structure.
-                      </p>
+                    <div className="space-y-6">
+                      {Array.from(new Set(college.coursesOffered.map(c => c.degree_type || 'B.E/B.TECH'))).map(type => {
+                          const typeCourses = college.coursesOffered.filter(c => (c.degree_type || 'B.E/B.TECH') === type);
+                          if (typeCourses.length === 0) return null;
+                          
+                          return (
+                              <div key={type} className="border-l-4 border-blue-600 pl-4 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                                  <h4 className="text-xl font-bold text-blue-900 mb-4">{type} Programs</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {typeCourses.map((course, index) => (
+                                          <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                                              <h5 className="font-bold text-lg text-gray-900 mb-2">{course.name}</h5>
+                                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                                                  <p><strong>Duration:</strong> {course.duration}</p>
+                                                  <p><strong>Fees:</strong> {course.fee || 'N/A'}</p>
+                                                  <p><strong>Avg Package:</strong> {course.average_package ? `${course.average_package}` : 'N/A'}</p>
+                                                  <p><strong>Strength:</strong> {course.number_of_students || 'N/A'}</p>
+                                                  <p><strong>Est. Year:</strong> {course.established_year || 'N/A'}</p>
+                                              </div>
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                      {college.coursesOffered.length === 0 && (
+                          <div className="text-center py-8 text-gray-500">No courses listed yet.</div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -792,6 +795,14 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                                     )}
                                     <span>•</span>
                                     <span>{review.date}</span>
+                                    {review.category && (
+                                      <>
+                                        <span>•</span>
+                                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider bg-blue-50 text-blue-700">
+                                          {review.category.replace('_', ' ')}
+                                        </Badge>
+                                      </>
+                                    )}
                                   </div>
 
                                   {/* Star Rating */}
@@ -827,6 +838,17 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                               <p className="text-gray-700 leading-relaxed">
                                 {review.reviewText}
                               </p>
+                              
+                              {/* Review Images */}
+                              {review.images && review.images.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-4">
+                                  {review.images.map((img, idx) => (
+                                    <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.open(img.image, '_blank')}>
+                                      <img src={img.image} alt="Review" className="w-full h-full object-cover" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
 
                             {/* Footer - Comments */}
@@ -1041,6 +1063,24 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
               </div>
             </div>
 
+            {/* Category */}
+            <div>
+              <label className="text-sm text-gray-700 mb-2 block">
+                What are you reviewing? <span className="text-red-500">*</span>
+              </label>
+              <select 
+                value={reviewCategory}
+                onChange={(e) => setReviewCategory(e.target.value)}
+                className="w-full p-2 border rounded-md bg-white text-sm"
+              >
+                <option value="infrastructure">Infrastructure</option>
+                <option value="teaching">Teaching Staff</option>
+                <option value="facilities">Facilities</option>
+                <option value="placements">Placements</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
             {/* Course */}
             <div>
               <label className="text-sm text-gray-700 mb-2 block">
@@ -1071,6 +1111,45 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
               </p>
             </div>
 
+            {/* Image Upload */}
+            <div>
+              <label className="text-sm text-gray-700 mb-2 block">
+                Add Images <span className="text-gray-400">(optional)</span>
+              </label>
+              <div className="flex flex-col gap-4">
+                <Input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    setReviewImages(prev => [...prev, ...files]);
+                  }}
+                  className="w-full text-sm cursor-pointer"
+                />
+                
+                {reviewImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {reviewImages.map((file, index) => (
+                      <div key={index} className="relative group w-20 h-20 rounded-lg overflow-hidden border">
+                        <img 
+                          src={URL.createObjectURL(file)} 
+                          alt="preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                        <button 
+                          onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== index))}
+                          className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Anonymous Option */}
             <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
               <input
@@ -1099,6 +1178,8 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                   setReviewRating(0);
                   setReviewText("");
                   setReviewCourse("");
+                  setReviewCategory("other");
+                  setReviewImages([]);
                   setIsAnonymousReview(false);
                 }}
               >
@@ -1108,36 +1189,46 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                 onClick={async () => {
                   if (reviewRating > 0 && reviewText.length >= 50) {
                     try {
-                      await reviewService.create({
-                        college: college.id,
-                        rating: reviewRating,
-                        text: reviewText,
-                        is_anonymous: isAnonymousReview
-                      });
-                      
-                      // Refresh reviews by refetching college details
-                      const updatedData = await collegeService.getDetail(college.id);
-                      setCollege(prev => ({
-                        ...prev,
-                        reviews: updatedData.reviews ? updatedData.reviews.map(r => ({
-                          id: r.id,
-                          studentName: r.user.username,
-                          isAnonymous: r.is_anonymous || false,
-                          rating: r.rating,
-                          date: new Date(r.created_at).toLocaleDateString(),
-                          reviewText: r.text,
-                          likes: 0,
-                          dislikes: 0,
-                          comments: r.comments ? r.comments.length : 0
-                        })) : []
-                      }));
+                        const formData = new FormData();
+                        formData.append('college', college.id);
+                        formData.append('rating', reviewRating);
+                        formData.append('text', reviewText);
+                        formData.append('category', reviewCategory);
+                        formData.append('is_anonymous', isAnonymousReview);
+                        
+                        reviewImages.forEach(img => {
+                          formData.append('images', img);
+                        });
 
-                      alert("Thank you! Your review has been submitted successfully.");
-                      setIsWriteReviewOpen(false);
-                      setReviewRating(0);
-                      setReviewText("");
-                      setReviewCourse("");
-                      setIsAnonymousReview(false);
+                        await reviewService.create(formData);
+                        
+                        // Refresh reviews by refetching college details
+                        const updatedData = await collegeService.getDetail(college.id);
+                        setCollege(prev => ({
+                          ...prev,
+                          reviews: updatedData.reviews ? updatedData.reviews.map(r => ({
+                            id: r.id,
+                            studentName: r.user.username,
+                            isAnonymous: r.is_anonymous || false,
+                            rating: r.rating,
+                            date: new Date(r.created_at).toLocaleDateString(),
+                            category: r.category,
+                            images: r.images || [],
+                            reviewText: r.text,
+                            likes: 0,
+                            dislikes: 0,
+                            comments: r.comments ? r.comments.length : 0
+                          })) : []
+                        }));
+
+                        alert("Thank you! Your review has been submitted successfully.");
+                        setIsWriteReviewOpen(false);
+                        setReviewRating(0);
+                        setReviewText("");
+                        setReviewCourse("");
+                        setReviewCategory("other");
+                        setReviewImages([]);
+                        setIsAnonymousReview(false);
                     } catch (error) {
                       console.error("Error submitting review:", error);
                       alert(error.response?.data?.detail || "Failed to submit review. Try again later.");

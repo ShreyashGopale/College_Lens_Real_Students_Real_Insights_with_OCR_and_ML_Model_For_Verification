@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collegeService, reviewService, galleryService, cutoffService } from "../services/api";
+import { collegeService, reviewService, galleryService, cutoffService, courseService } from "../services/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Star, Users, MessageSquare, LogOut, MapPin, Building, Briefcase, IndianRupee, Upload, Camera, Trash2, Image, Video, Plus, Home } from "lucide-react";
@@ -48,6 +48,21 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
         caste: 'General',
         score: ''
     });
+
+    // Courses State
+    const [courses, setCourses] = useState([]);
+    const [isEditingCourse, setIsEditingCourse] = useState(null);
+    const [showCourseForm, setShowCourseForm] = useState(false);
+    const [courseFormData, setCourseFormData] = useState({
+        degree_type: 'B.E/B.TECH',
+        name: '',
+        duration: '',
+        fee: '',
+        established_year: '',
+        average_package: '',
+        number_of_students: ''
+    });
+    const DEGREE_TYPES = ['B.E/B.TECH', 'MBA', 'BCA', 'B.Sc', 'M.Tech', 'Diploma', 'Other'];
 
     // New College Creation State
     const [newCollegeData, setNewCollegeData] = useState({
@@ -190,6 +205,57 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
         setShowCutoffForm(true);
     };
 
+    const handleSaveCourse = async (e) => {
+        e.preventDefault();
+        try {
+            setLoading(true);
+            const data = { ...courseFormData, college: college.id, number_of_students: parseInt(courseFormData.number_of_students) || null };
+            if (isEditingCourse) {
+                const updatedCourse = await courseService.update(isEditingCourse, data);
+                setCourses(prev => prev.map(c => c.id === isEditingCourse ? updatedCourse : c));
+                alert("Branch updated successfully!");
+            } else {
+                const newCourse = await courseService.create(data);
+                setCourses(prev => [...prev, newCourse]);
+                alert("Branch added successfully!");
+            }
+            setShowCourseForm(false);
+            setCourseFormData({ degree_type: 'B.E/B.TECH', name: '', duration: '', fee: '', established_year: '', average_package: '', number_of_students: '' });
+            setIsEditingCourse(null);
+        } catch (error) {
+            console.error("Failed to save branch", error);
+            alert("Failed to save branch parameters correctly.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteCourse = async (id) => {
+        if (!confirm("Are you sure you want to delete this branch?")) return;
+        try {
+            await courseService.delete(id);
+            setCourses(prev => prev.filter(c => c.id !== id));
+            alert("Branch deleted seamlessly!");
+        } catch (error) {
+            console.error("Failed to delete branch", error);
+            alert("Failed to delete branch.");
+        }
+    };
+
+    const handleEditCourseInit = (course) => {
+        setIsEditingCourse(course.id);
+        setCourseFormData({
+            degree_type: course.degree_type || 'B.E/B.TECH',
+            name: course.name || '',
+            duration: course.duration || '',
+            fee: course.fee || '',
+            established_year: course.established_year || '',
+            average_package: course.average_package || '',
+            number_of_students: course.number_of_students || ''
+        });
+        setShowCourseForm(true);
+    };
+
     const handleCreateCollege = async (e) => {
         e.preventDefault();
         try {
@@ -261,6 +327,9 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                 // Initialize cutoffs locally
                 if (collegeData.cutoffs) {
                     setCutoffs(collegeData.cutoffs);
+                }
+                if (collegeData.courses) {
+                    setCourses(collegeData.courses);
                 }
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
@@ -456,6 +525,7 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                         <TabsTrigger value="facilities">Facilities</TabsTrigger>
                         <TabsTrigger value="cutoffs">Cutoffs</TabsTrigger>
                         <TabsTrigger value="gallery">Gallery</TabsTrigger>
+                        <TabsTrigger value="courses">Branches & Courses</TabsTrigger>
                         <TabsTrigger value="details">College Details</TabsTrigger>
                     </TabsList>
 
@@ -580,6 +650,95 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                                         ))}
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="courses">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>Branches & Degrees</CardTitle>
+                                <Button size="sm" onClick={() => { setShowCourseForm(!showCourseForm); setIsEditingCourse(null); setCourseFormData({ degree_type: 'B.E/B.TECH', name: '', duration: '', fee: '', established_year: '', average_package: '', number_of_students: '' }); }}>
+                                    {showCourseForm ? "Cancel" : "Add Branch"}
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {showCourseForm && (
+                                    <div className="bg-gray-50 p-6 rounded-lg border mb-8">
+                                        <h4 className="font-semibold text-gray-900 mb-4">{isEditingCourse ? "Edit Branch" : "Add New Branch"}</h4>
+                                        <form onSubmit={handleSaveCourse} className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label>Degree Type</Label>
+                                                    <select required className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" value={courseFormData.degree_type} onChange={(e) => setCourseFormData({ ...courseFormData, degree_type: e.target.value })}>
+                                                        {DEGREE_TYPES.map(type => (
+                                                            <option key={type} value={type}>{type}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <Label>Course / Branch Name</Label>
+                                                    <Input required value={courseFormData.name} onChange={(e) => setCourseFormData({ ...courseFormData, name: e.target.value })} placeholder="e.g. Computer Science Engineering" />
+                                                </div>
+                                                <div>
+                                                    <Label>Established Year</Label>
+                                                    <Input type="number" value={courseFormData.established_year} onChange={(e) => setCourseFormData({ ...courseFormData, established_year: e.target.value })} placeholder="e.g. 2005" />
+                                                </div>
+                                                <div>
+                                                    <Label>Average Package</Label>
+                                                    <Input value={courseFormData.average_package} onChange={(e) => setCourseFormData({ ...courseFormData, average_package: e.target.value })} placeholder="e.g. 8 LPA" />
+                                                </div>
+                                                <div>
+                                                    <Label>Number of Students</Label>
+                                                    <Input type="number" value={courseFormData.number_of_students} onChange={(e) => setCourseFormData({ ...courseFormData, number_of_students: e.target.value })} placeholder="e.g. 120" />
+                                                </div>
+                                                <div>
+                                                    <Label>Course Duration</Label>
+                                                    <Input required value={courseFormData.duration} onChange={(e) => setCourseFormData({ ...courseFormData, duration: e.target.value })} placeholder="e.g. 4 Years" />
+                                                </div>
+                                                <div>
+                                                    <Label>Course Fees</Label>
+                                                    <Input value={courseFormData.fee} onChange={(e) => setCourseFormData({ ...courseFormData, fee: e.target.value })} placeholder="e.g. ₹1,50,000 / year" />
+                                                </div>
+                                            </div>
+                                            <Button type="submit" className="w-full mt-4" disabled={loading}>{loading ? "Saving..." : "Save Branch Details"}</Button>
+                                        </form>
+                                    </div>
+                                )}
+                                
+                                <div className="space-y-6">
+                                    {DEGREE_TYPES.map(type => {
+                                        const typeCourses = courses.filter(c => c.degree_type === type);
+                                        if (typeCourses.length === 0) return null;
+                                        
+                                        return (
+                                            <div key={type} className="border-l-4 border-blue-600 pl-4 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                                                <h4 className="text-xl font-bold text-gray-900 mb-4">{type} Programs</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {typeCourses.map(course => (
+                                                        <div key={course.id} className="p-4 bg-gray-50 rounded-lg border group relative">
+                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                                <Button size="sm" variant="outline" className="h-8 shadow" onClick={() => handleEditCourseInit(course)}>Edit</Button>
+                                                                <Button size="sm" variant="destructive" className="h-8 shadow" onClick={() => handleDeleteCourse(course.id)}>Delete</Button>
+                                                            </div>
+                                                            <h5 className="font-bold text-lg text-blue-900 mb-2">{course.name}</h5>
+                                                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                                                <p><strong>Duration:</strong> {course.duration}</p>
+                                                                <p><strong>Fees:</strong> {course.fee || 'N/A'}</p>
+                                                                <p><strong>Avg Package:</strong> {course.average_package || 'N/A'}</p>
+                                                                <p><strong>Strength:</strong> {course.number_of_students || 'N/A'}</p>
+                                                                <p><strong>Est. Year:</strong> {course.established_year || 'N/A'}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {courses.length === 0 && !showCourseForm && (
+                                        <div className="text-center py-8 text-gray-500">No branches added yet.</div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>

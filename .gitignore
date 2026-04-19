@@ -1,5 +1,38 @@
+# Node
 node_modules/
 dist/
 build/
 .env
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# ML Model & Data (Large files)
+backend/ml_model/
+backend/data/
+*.pkl
+*.h5
+*.joblib
+*.csv
+*.xlsx
+
+# Logs and Scratch
+backend/scratch/
+ocr_results.md
+verification_test_output.md
+backend/test_ocr_robustness.py
+backend/python
+Frontend/fix_button.js
+Frontend/rewrite_header.js
