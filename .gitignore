@@ -36,3 +36,5 @@ backend/test_ocr_robustness.py
 backend/python
 Frontend/fix_button.js
 Frontend/rewrite_header.js
+
+v/
