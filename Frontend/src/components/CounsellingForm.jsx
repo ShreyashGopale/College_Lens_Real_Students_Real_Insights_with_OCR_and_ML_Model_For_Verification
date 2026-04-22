@@ -38,7 +38,7 @@ export function CounsellingForm({ onBack }) {
                 result_count: parseInt(formData.result_count, 10)
             };
 
-            const response = await axios.post("http://localhost:8000/api/users/predict-colleges/", payload);
+            const response = await axios.post("/api/users/predict-colleges/", payload);
             
             if (response.data.data && response.data.data.length > 0) {
                 if (response.data.is_fallback) {

@@ -19,3 +19,6 @@ pytesseract
 boto3
 PyMuPDF
 easyocr
+vaderSentiment
+wordcloud
+nltk

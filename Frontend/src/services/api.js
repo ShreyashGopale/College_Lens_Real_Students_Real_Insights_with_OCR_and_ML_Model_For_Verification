@@ -97,6 +97,11 @@ export const reviewService = {
         return response.data;
     },
 
+    getSentiment: async (collegeId) => {
+        const response = await api.get(`colleges/${collegeId}/sentiment/`);
+        return response.data;
+    },
+
     getByCollege: async (collegeId) => {
         const response = await api.get(`reviews/?college=${collegeId}`);
         return response.data;

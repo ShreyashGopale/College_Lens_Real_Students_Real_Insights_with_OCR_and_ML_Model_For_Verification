@@ -1,5 +1,8 @@
 import fitz
-import easyocr
+try:
+    import easyocr
+except ImportError:
+    easyocr = None
 import re
 import os
 import tempfile

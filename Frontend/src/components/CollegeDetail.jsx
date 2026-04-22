@@ -105,6 +105,24 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
   }, [collegeId]);
 
   const [reviewRating, setReviewRating] = useState(0);
+  const [sentimentData, setSentimentData] = useState(null);
+  const [sentimentLoading, setSentimentLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSentiment = async () => {
+      if (!collegeId) return;
+      setSentimentLoading(true);
+      try {
+        const data = await reviewService.getSentiment(collegeId);
+        setSentimentData(data);
+      } catch (error) {
+        console.error("Sentiment fetch failed", error);
+      } finally {
+        setSentimentLoading(false);
+      }
+    };
+    fetchSentiment();
+  }, [collegeId]);
   const [reviewText, setReviewText] = useState("");
   const [reviewCourse, setReviewCourse] = useState("");
   const [reviewCategory, setReviewCategory] = useState("other");
@@ -719,6 +737,30 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                       </div>
                     </div>
                   </div>
+
+                  {/* Sentiment WordCloud Section */}
+                  {sentimentLoading && (
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center text-gray-500">Loading sentiment analysis...</div>
+                  )}
+                  {sentimentData && !sentimentLoading && (
+                    <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                      <h4 className="text-lg text-blue-900 mb-4">
+                        Review Sentiment Analysis
+                        <span className="text-sm text-gray-500 ml-2">({sentimentData.total_reviews} reviews)</span>
+                      </h4>
+                      <img src={`data:image/png;base64,${sentimentData.wordcloud_image}`} alt="Word Cloud" className="w-full rounded-lg shadow-sm mb-4" />
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(sentimentData.word_sentiments).slice(0, 20).map(([word, data]) => (
+                          <span key={word} className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            data.sentiment === "positive" ? "bg-green-100 text-green-800 border border-green-200"
+                            : data.sentiment === "negative" ? "bg-red-100 text-red-800 border border-red-200"
+                            : "bg-gray-100 text-gray-700 border border-gray-200"}`}>
+                            {word}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Write Review Button - Only for registered students */}
                   {isRegisteredForThisCollege ? (
