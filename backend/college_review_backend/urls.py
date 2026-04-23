@@ -37,6 +37,6 @@ urlpatterns = [
     path('', api_root),
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
-    path('api/colleges/', include('colleges.urls')),
     path('api/', include('reviews.urls')), 
+    path('api/colleges/', include('colleges.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

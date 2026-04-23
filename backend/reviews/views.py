@@ -13,7 +13,7 @@ import base64
 import io
 import re
 
-nltk.download('stopwords', quiet=True)
+# nltk.download('stopwords', quiet=True)
 from nltk.corpus import stopwords
 
 class ReviewViewSet(viewsets.ModelViewSet):

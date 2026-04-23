@@ -4,5 +4,6 @@ __pycache__/
 .env
 media/
 db.sqlite3
+sqlite_data/
 ml_model/*
 !ml_model/.gitkeep
