@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { collegeService, reviewService, galleryService, cutoffService, courseService } from "../services/api";
+import { collegeService, reviewService, galleryService, cutoffService, courseService, authService } from "../services/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Star, Users, MessageSquare, LogOut, MapPin, Building, Briefcase, IndianRupee, Upload, Camera, Trash2, Image, Video, Plus, Home } from "lucide-react";
+import { Star, Users, MessageSquare, LogOut, MapPin, Building, Briefcase, IndianRupee, Upload, Camera, Trash2, Image, Video, Plus, Home, Settings, KeyRound, AlertTriangle, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -14,6 +14,19 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+
+    // Account Settings State
+    const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+    const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [showOldPassword, setShowOldPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     // Gallery State
     const [galleryMedia, setGalleryMedia] = useState([]);
@@ -89,7 +102,9 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                 website: college.website || "",
                 hostel_available: college.hostel_available || false,
                 hostel_fees: college.hostel_fees || "",
-                bus_available: college.bus_available || false
+                bus_available: college.bus_available || false,
+                mission: college.mission || "",
+                vision: college.vision || ""
             });
         }
     }, [college]);
@@ -122,7 +137,9 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                 description: editFormData.description,
                 hostel_available: editFormData.hostel_available,
                 hostel_fees: editFormData.hostel_fees,
-                bus_available: editFormData.bus_available
+                bus_available: editFormData.bus_available,
+                mission: editFormData.mission,
+                vision: editFormData.vision
             };
             const updatedCollege = await collegeService.update(college.id, detailsData);
             setCollege({ ...college, ...updatedCollege });
@@ -460,10 +477,51 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-gray-600">Welcome, {user.username}</span>
-                        <Button variant="outline" size="sm" onClick={() => setIsLogoutDialogOpen(true)} className="gap-2">
-                            <LogOut className="w-4 h-4" />
-                            Logout
-                        </Button>
+                        {/* Account Dropdown */}
+                        <div className="relative">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+                            >
+                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    {user.username?.charAt(0).toUpperCase()}
+                                </div>
+                                Account
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isAccountMenuOpen ? 'rotate-180' : ''}`} />
+                            </Button>
+                            {isAccountMenuOpen && (
+                                <>
+                                    {/* Invisible overlay to close the dropdown */}
+                                    <div className="fixed inset-0 z-30" onClick={() => setIsAccountMenuOpen(false)} />
+                                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border z-40 py-1">
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                            onClick={() => { setIsAccountMenuOpen(false); }}
+                                        >
+                                            <Building className="w-4 h-4 text-blue-600" />
+                                            Dashboard
+                                        </button>
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                            onClick={() => { setIsAccountMenuOpen(false); setIsAccountSettingsOpen(true); }}
+                                        >
+                                            <Settings className="w-4 h-4 text-gray-500" />
+                                            Account Settings
+                                        </button>
+                                        <div className="border-t my-1" />
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                            onClick={() => { setIsAccountMenuOpen(false); setIsLogoutDialogOpen(true); }}
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Logout
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -804,6 +862,28 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                                                 placeholder="Tell us about the college..."
                                             />
                                         </div>
+
+                                        {/* Vision */}
+                                        <div>
+                                            <Label>Vision Statement</Label>
+                                            <textarea
+                                                className="w-full min-h-[100px] p-3 text-sm border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                value={editFormData.vision}
+                                                onChange={(e) => setEditFormData({ ...editFormData, vision: e.target.value })}
+                                                placeholder="Enter the college's vision statement..."
+                                            />
+                                        </div>
+
+                                        {/* Mission */}
+                                        <div>
+                                            <Label>Mission Statement</Label>
+                                            <textarea
+                                                className="w-full min-h-[100px] p-3 text-sm border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                value={editFormData.mission}
+                                                onChange={(e) => setEditFormData({ ...editFormData, mission: e.target.value })}
+                                                placeholder="Enter the college's mission statement..."
+                                            />
+                                        </div>
                                         
                                         {/* Facilities Section in Edit Form */}
                                         <Button type="submit" className="w-full">Save Changes</Button>
@@ -837,6 +917,18 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                                             <label className="text-sm font-medium text-gray-500">Description</label>
                                             <p className="text-gray-700 mt-1">{college.description}</p>
                                         </div>
+                                        {(college.vision || college.mission) && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                                    <label className="text-sm font-medium text-blue-700">Vision</label>
+                                                    <p className="text-gray-700 mt-1 italic">{college.vision || <span className="text-gray-400">Not added yet</span>}</p>
+                                                </div>
+                                                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                                    <label className="text-sm font-medium text-green-700">Mission</label>
+                                                    <p className="text-gray-700 mt-1 italic">{college.mission || <span className="text-gray-400">Not added yet</span>}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </CardContent>
@@ -1167,6 +1259,238 @@ export function CollegeDashboard({ user, onLogout, onGoHome }) {
                         <Button variant="destructive" onClick={() => { setIsLogoutDialogOpen(false); onLogout(); }}>
                             Yes
                         </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Account Settings Dialog */}
+            <Dialog open={isAccountSettingsOpen} onOpenChange={setIsAccountSettingsOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl flex items-center gap-2">
+                            <Settings className="w-5 h-5 text-blue-600" />
+                            Account Settings
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-4">
+                        {/* User Info */}
+                        <div className="bg-gray-50 p-4 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                                    {user.username?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-gray-900">{user.username}</p>
+                                    <p className="text-sm text-gray-500">College Admin</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Change Password Option */}
+                        <button
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-blue-50 hover:border-blue-200 transition-colors text-left group"
+                            onClick={() => {
+                                setIsAccountSettingsOpen(false);
+                                setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                                setPasswordError('');
+                                setPasswordSuccess('');
+                                setIsChangePasswordOpen(true);
+                            }}
+                        >
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                <KeyRound className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-gray-900">Change Password</p>
+                                <p className="text-sm text-gray-500">Update your account password</p>
+                            </div>
+                        </button>
+
+                        {/* Delete College Profile Option */}
+                        <button
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border border-red-200 hover:bg-red-50 transition-colors text-left group"
+                            onClick={() => {
+                                setIsAccountSettingsOpen(false);
+                                setIsDeleteConfirmOpen(true);
+                            }}
+                        >
+                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                                <Trash2 className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-red-700">Delete College Profile</p>
+                                <p className="text-sm text-red-400">Permanently remove all college data</p>
+                            </div>
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Change Password Dialog */}
+            <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg flex items-center gap-2">
+                            <KeyRound className="w-5 h-5 text-blue-600" />
+                            Change Password
+                        </DialogTitle>
+                    </DialogHeader>
+                    <form
+                        className="space-y-4 mt-4"
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            setPasswordError('');
+                            setPasswordSuccess('');
+
+                            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                                setPasswordError('New passwords do not match.');
+                                return;
+                            }
+                            if (passwordData.newPassword.length < 6) {
+                                setPasswordError('New password must be at least 6 characters.');
+                                return;
+                            }
+
+                            try {
+                                setPasswordLoading(true);
+                                const result = await authService.changePassword(passwordData.oldPassword, passwordData.newPassword);
+                                // Update the token in localStorage
+                                if (result.token) {
+                                    localStorage.setItem('token', result.token);
+                                }
+                                setPasswordSuccess('Password changed successfully!');
+                                setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                                setTimeout(() => setIsChangePasswordOpen(false), 1500);
+                            } catch (error) {
+                                setPasswordError(error.response?.data?.error || 'Failed to change password. Please try again.');
+                            } finally {
+                                setPasswordLoading(false);
+                            }
+                        }}
+                    >
+                        <div>
+                            <Label>Current Password</Label>
+                            <div className="relative mt-1">
+                                <Input
+                                    type={showOldPassword ? 'text' : 'password'}
+                                    required
+                                    value={passwordData.oldPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                                    placeholder="Enter current password"
+                                />
+                                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowOldPassword(!showOldPassword)}>
+                                    {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <Label>New Password</Label>
+                            <div className="relative mt-1">
+                                <Input
+                                    type={showNewPassword ? 'text' : 'password'}
+                                    required
+                                    value={passwordData.newPassword}
+                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                    placeholder="Enter new password"
+                                />
+                                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowNewPassword(!showNewPassword)}>
+                                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <Label>Confirm New Password</Label>
+                            <Input
+                                type="password"
+                                required
+                                className="mt-1"
+                                value={passwordData.confirmPassword}
+                                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                placeholder="Confirm new password"
+                            />
+                        </div>
+
+                        {passwordError && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                                {passwordError}
+                            </div>
+                        )}
+                        {passwordSuccess && (
+                            <div className="bg-green-50 border border-green-200 text-green-700 text-sm p-3 rounded-lg">
+                                ✓ {passwordSuccess}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={passwordLoading}>
+                                {passwordLoading ? 'Changing...' : 'Change Password'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete College Confirmation Dialog */}
+            <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg flex items-center gap-2 text-red-700">
+                            <AlertTriangle className="w-5 h-5" />
+                            Delete College Profile
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4 space-y-4">
+                        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                            <p className="text-red-800 font-medium mb-2">This action cannot be undone!</p>
+                            <p className="text-red-600 text-sm">
+                                Deleting the college profile will permanently remove:
+                            </p>
+                            <ul className="text-red-600 text-sm mt-2 ml-4 list-disc space-y-1">
+                                <li>All college details and description</li>
+                                <li>All courses and branches</li>
+                                <li>All cutoff data</li>
+                                <li>All gallery photos and videos</li>
+                                <li>All student reviews</li>
+                                <li>All placement information</li>
+                            </ul>
+                        </div>
+
+                        <p className="text-gray-700 text-sm font-medium">
+                            Are you sure you want to delete <strong>{college?.name}</strong>?
+                        </p>
+
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)} disabled={deleteLoading}>
+                                No, Keep It
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={deleteLoading}
+                                onClick={async () => {
+                                    try {
+                                        setDeleteLoading(true);
+                                        await collegeService.delete(college.id);
+                                        // Clear college_id from local user data
+                                        const updatedUser = { ...user, college_id: null };
+                                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                                        setIsDeleteConfirmOpen(false);
+                                        alert('College profile has been permanently deleted.');
+                                        window.location.reload();
+                                    } catch (error) {
+                                        console.error('Failed to delete college', error);
+                                        alert('Failed to delete college profile. Please try again.');
+                                    } finally {
+                                        setDeleteLoading(false);
+                                    }
+                                }}
+                            >
+                                {deleteLoading ? 'Deleting...' : 'Yes, Delete Everything'}
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

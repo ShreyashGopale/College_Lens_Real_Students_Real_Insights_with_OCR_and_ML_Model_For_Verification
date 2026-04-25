@@ -18,6 +18,10 @@ class College(models.Model):
     hostel_fees = models.CharField(max_length=100, blank=True, null=True, help_text="e.g. ₹50,000/year")
     bus_available = models.BooleanField(default=False)
     
+    # Mission & Vision
+    mission = models.TextField(blank=True, null=True, help_text="College mission statement")
+    vision = models.TextField(blank=True, null=True, help_text="College vision statement")
+    
     def __str__(self):
         return self.name
 

@@ -1,4 +1,4 @@
-import { Star, MapPin, ArrowLeft, Home, Wifi, Book, Trophy, ThumbsUp, ThumbsDown, MessageCircle, User, Image as ImageIcon, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { Star, MapPin, ArrowLeft, Home, Wifi, Book, Trophy, ThumbsUp, ThumbsDown, MessageCircle, User, Image as ImageIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -35,6 +35,11 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
 
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxImages, setLightboxImages] = useState([]);
+
   useEffect(() => {
     const fetchCollegeDetail = async () => {
       try {
@@ -68,9 +73,9 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
             comments: r.comments ? r.comments.length : 0
           })) : [],
 
-          // Placeholders for missing data
-          vision: data.description || "Vision statement not available.",
-          mission: "Mission statement not available.",
+          // Mission & Vision from API
+          vision: data.vision || "Vision statement not available.",
+          mission: data.mission || "Mission statement not available.",
           hostelAvailable: data.hostel_available || false,
           hostelFees: data.hostel_fees || "",
           busAvailable: data.bus_available || false,
@@ -201,6 +206,54 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
   const filteredStaticImages = galleryFilter === 'all'
     ? galleryImages
     : galleryImages.filter(img => img.category.toLowerCase().replace(/\s+/g, '_') === galleryFilter);
+
+  // Lightbox helpers
+  const openLightbox = (clickedItem, allItems, isStatic = false) => {
+    // Get all images of the same category
+    const category = isStatic
+      ? clickedItem.category.toLowerCase().replace(/\s+/g, '_')
+      : clickedItem.category;
+    const sameCategoryItems = allItems.filter(item => {
+      const itemCat = isStatic
+        ? item.category.toLowerCase().replace(/\s+/g, '_')
+        : item.category;
+      return itemCat === category;
+    });
+    // Only include images, not videos
+    const imageItems = sameCategoryItems.filter(item =>
+      isStatic ? true : item.media_type !== 'video'
+    );
+    const urls = imageItems.map(item =>
+      isStatic ? item.url : (item.file_url || item.file)
+    );
+    const clickedUrl = isStatic
+      ? clickedItem.url
+      : (clickedItem.file_url || clickedItem.file);
+    const idx = urls.indexOf(clickedUrl);
+    setLightboxImages(urls);
+    setLightboxIndex(idx >= 0 ? idx : 0);
+    setLightboxOpen(true);
+  };
+
+  const lightboxPrev = () => {
+    setLightboxIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+  };
+
+  const lightboxNext = () => {
+    setLightboxIndex(prev => (prev + 1) % lightboxImages.length);
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowLeft') lightboxPrev();
+      if (e.key === 'ArrowRight') lightboxNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, lightboxImages.length]);
 
   if (loading || !college) {
     return <div className="min-h-screen flex items-center justify-center">Loading college details...</div>;
@@ -993,7 +1046,15 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                   {filteredGallery.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {filteredGallery.map((item) => (
-                        <div key={item.id} className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer">
+                        <div
+                          key={item.id}
+                          className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+                          onClick={() => {
+                            if (item.media_type !== 'video') {
+                              openLightbox(item, filteredGallery, false);
+                            }
+                          }}
+                        >
                           {item.media_type === 'video' ? (
                             <video
                               src={item.file_url || item.file}
@@ -1004,13 +1065,12 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                           ) : (
                             <img
                               src={item.file_url || item.file}
-                              alt={item.title || item.category}
+                              alt={GALLERY_CATEGORIES.find(c => c.value === item.category)?.label || item.category}
                               className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <div className="absolute bottom-0 left-0 right-0 p-4">
-                              <p className="text-white">{item.title || 'Untitled'}</p>
                               <p className="text-blue-200 text-sm">
                                 {GALLERY_CATEGORIES.find(c => c.value === item.category)?.label || item.category}
                               </p>
@@ -1028,15 +1088,18 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
                     filteredStaticImages.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredStaticImages.map((image) => (
-                          <div key={image.id} className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer">
+                          <div
+                            key={image.id}
+                            className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+                            onClick={() => openLightbox(image, filteredStaticImages, true)}
+                          >
                             <ImageWithFallback
                               src={image.url}
-                              alt={image.title}
+                              alt={image.category}
                               className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="absolute bottom-0 left-0 right-0 p-4">
-                                <p className="text-white">{image.title}</p>
                                 <p className="text-blue-200 text-sm">{image.category}</p>
                               </div>
                             </div>
@@ -1066,6 +1129,60 @@ export function CollegeDetail({ collegeId, onBack, user, onLogin, initialTab = "
           </div>
         </div>
       </Tabs>
+
+      {/* Photo Lightbox Modal */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close Button */}
+          <button
+            className="absolute top-4 right-4 z-50 text-white bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+          >
+            <X className="w-7 h-7" />
+          </button>
+
+          {/* Counter */}
+          {lightboxImages.length > 1 && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/60 px-5 py-2 rounded-full font-medium tracking-wide">
+              {lightboxIndex + 1} / {lightboxImages.length}
+            </div>
+          )}
+
+          {/* Previous Button */}
+          {lightboxImages.length > 1 && (
+            <button
+              className="absolute left-4 z-50 text-white bg-black/40 hover:bg-black/60 rounded-full p-3 transition-colors shadow-lg"
+              onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+          )}
+
+          {/* Full-screen Image */}
+          <img
+            src={lightboxImages[lightboxIndex]}
+            alt="Gallery photo"
+            style={{ width: '95vw', height: '95vh', objectFit: 'contain' }}
+            className="select-none"
+            onClick={(e) => e.stopPropagation()}
+            draggable={false}
+          />
+
+          {/* Next Button */}
+          {lightboxImages.length > 1 && (
+            <button
+              className="absolute right-4 z-50 text-white bg-black/40 hover:bg-black/60 rounded-full p-3 transition-colors shadow-lg"
+              onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Write Review Dialog */}
       <Dialog open={isWriteReviewOpen} onOpenChange={setIsWriteReviewOpen}>

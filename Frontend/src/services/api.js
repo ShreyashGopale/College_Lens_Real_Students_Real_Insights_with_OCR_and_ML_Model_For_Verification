@@ -87,6 +87,17 @@ export const collegeService = {
             console.error(`Error updating college ${id}:`, error);
             throw error;
         }
+    },
+
+    // Delete college profile
+    delete: async (id) => {
+        try {
+            const response = await api.delete(`colleges/${id}/`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting college ${id}:`, error);
+            throw error;
+        }
     }
 };
 
@@ -122,6 +133,13 @@ export const authService = {
     studentRegister: async (formData) => {
         const response = await api.post('users/student-register/', formData, {
             headers: { 'Content-Type': undefined } // Force Axios to calculate multipart boundary
+        });
+        return response.data;
+    },
+    changePassword: async (oldPassword, newPassword) => {
+        const response = await api.post('users/change-password/', {
+            old_password: oldPassword,
+            new_password: newPassword
         });
         return response.data;
     }

@@ -42,7 +42,7 @@ class CollegeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = College
-        fields = ['id', 'name', 'location', 'description', 'established_year', 'website', 'image', 'courses', 'facilities', 'gallery_media', 'cutoffs', 'review_count', 'average_rating', 'placement_description', 'average_package', 'highest_package', 'hostel_available', 'hostel_fees', 'bus_available']
+        fields = ['id', 'name', 'location', 'description', 'established_year', 'website', 'image', 'courses', 'facilities', 'gallery_media', 'cutoffs', 'review_count', 'average_rating', 'placement_description', 'average_package', 'highest_package', 'hostel_available', 'hostel_fees', 'bus_available', 'mission', 'vision']
 
     def get_review_count(self, obj):
         return obj.reviews.count()
